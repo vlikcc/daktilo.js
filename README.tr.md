@@ -12,7 +12,7 @@ Herhangi bir HTML kapsayıcısını tek bir yapılandırma nesnesiyle gerçekçi
 - **Dosyasız ses:** tuş, boşluk ve satır sonu çanı Web Audio API ile gerçek zamanlı sentezlenir; istenirse [gerçek daktilo kaydı](#gerçek-daktilo-kaydı) kullanılabilir
 - **Oynatma denetimi:** `pause()`, `resume()`, `skip()`, metin eklemek için `type()`, olaylar, sessize alma ve ses seviyesi
 - **Erişilebilir:** yazım sürerken ekran okuyucular metnin tamamını okur; `prefers-reduced-motion` tercihine uyar
-- **< 6 KB** (minified + gzip), TypeScript tipleri dahil, SSR güvenli
+- **< 6 KB** (ESM, minified + gzip), TypeScript tipleri dahil, SSR güvenli
 - **Ekosistem:** React, Astro, Tailwind CSS eklentisi, `<textarea>` / `contenteditable` için Yazar modu, klavye düzenleri
 
 ## Kurulum
@@ -220,7 +220,7 @@ npm run lint           # ESLint
 npm run format         # Prettier
 npm run typecheck
 npm run build          # dist/: ESM, CJS, IIFE, tipler ve daktilo.css
-npm run size           # çekirdek gzip boyutu < 6 KB kontrolü
+npm run size           # çekirdek gzip boyutu kontrolü: ESM < 6 KB, CJS/IIFE < 6,5 KB
 npm run lint:pkg       # publint + Are the Types Wrong?
 npm run playground     # derler ve http://127.0.0.1:5173/playground/ adresinde sunar
 npx changeset          # bir sonraki sürüm için değişikliği tanımlar

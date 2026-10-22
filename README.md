@@ -12,7 +12,7 @@ A **zero-dependency** micro-library that turns any HTML container into a realist
 - **File-free sound:** key, space and carriage-return bell synthesized live with the Web Audio API; optionally use a [real typewriter recording](#real-typewriter-recordings)
 - **Playback control:** `pause()`, `resume()`, `skip()`, `type()` to append text, events, mute and volume
 - **Accessible:** screen readers get the full text while typing; respects `prefers-reduced-motion`
-- **< 6 KB** (minified + gzip), TypeScript types included, SSR-safe
+- **< 6 KB** (ESM, minified + gzip), TypeScript types included, SSR-safe
 - **Ecosystem:** React, Astro, Tailwind CSS plugin, Writer mode for `<textarea>` / `contenteditable`, keyboard layouts
 
 ## Install
@@ -221,7 +221,7 @@ npm run lint           # ESLint
 npm run format         # Prettier
 npm run typecheck
 npm run build          # dist/: ESM, CJS, IIFE, types and daktilo.css
-npm run size           # core gzip size < 6 KB check
+npm run size           # core gzip size check: ESM < 6 KB, CJS/IIFE < 6.5 KB
 npm run lint:pkg       # publint + Are the Types Wrong?
 npm run playground     # builds and serves http://127.0.0.1:5173/playground/
 npx changeset          # describe a change for the next release
