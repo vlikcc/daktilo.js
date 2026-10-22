@@ -1,0 +1,315 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Daktilo Playground — daktilo-js</title>
+    <style>
+      :root {
+        --bg: #e9e5dc;
+        --panel: #fbfaf7;
+        --ink: #262421;
+        --muted: #6b665d;
+        --accent: #c84b31;
+        --line: rgba(38, 36, 33, 0.14);
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 15px/1.5 'Courier Prime', Courier, monospace;
+      }
+      header.site {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1.5rem 2rem 0.5rem;
+      }
+      header.site h1 { margin: 0; font: 400 2rem 'Special Elite', monospace; }
+      header.site p { margin: 0; color: var(--muted); }
+      .install {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--ink);
+        color: #f4f1ea;
+        padding: 0.4rem 0.4rem 0.4rem 0.9rem;
+        border-radius: 4px;
+      }
+      main {
+        display: grid;
+        grid-template-columns: minmax(280px, 340px) 1fr;
+        gap: 1.5rem;
+        padding: 1rem 2rem 3rem;
+        align-items: start;
+      }
+      @media (max-width: 860px) { main { grid-template-columns: 1fr; padding: 1rem; } }
+      .panel {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 1.25rem;
+        position: sticky;
+        top: 1rem;
+      }
+      fieldset { border: 0; border-top: 1px dashed var(--line); margin: 0 0 1rem; padding: 0.75rem 0 0; }
+      legend { font: 400 1rem 'Special Elite', monospace; padding-right: 0.5rem; }
+      label { display: grid; gap: 0.2rem; margin-bottom: 0.7rem; font-size: 0.85rem; }
+      label.inline { display: flex; align-items: center; gap: 0.5rem; }
+      .row { display: flex; justify-content: space-between; }
+      output { color: var(--accent); font-weight: 700; }
+      input[type='range'] { width: 100%; accent-color: var(--accent); }
+      input[type='checkbox'] { accent-color: var(--accent); }
+      input[type='text'], select, textarea {
+        width: 100%;
+        font: inherit;
+        padding: 0.35rem 0.5rem;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        background: #fff;
+        color: var(--ink);
+      }
+      textarea { min-height: 9rem; resize: vertical; }
+      .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 0.75rem; }
+      button {
+        font: inherit;
+        cursor: pointer;
+        border: 1px solid var(--ink);
+        background: var(--ink);
+        color: #f4f1ea;
+        padding: 0.45rem 0.9rem;
+        border-radius: 4px;
+      }
+      button.ghost { background: transparent; color: var(--ink); }
+      .install button { padding: 0.2rem 0.6rem; background: var(--accent); border-color: var(--accent); }
+      .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+      .stage { min-width: 0; }
+      .stage-bar { display: flex; justify-content: flex-end; gap: 0.5rem; margin-bottom: 0.5rem; }
+      #sheet { margin-top: 0; }
+      .code {
+        margin-top: 1.5rem;
+        background: #1f1d1a;
+        color: #e9e5dc;
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .code-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        font-size: 0.8rem;
+        color: #a8a29e;
+      }
+      .code-bar button { padding: 0.2rem 0.6rem; background: transparent; color: #e9e5dc; border-color: #57534e; }
+      .code pre { margin: 0; padding: 1rem; overflow-x: auto; font-size: 0.85rem; }
+      .hint { color: var(--muted); font-size: 0.75rem; margin: -0.4rem 0 0.7rem; }
+    </style>
+  </head>
+  <body>
+    <header class="site">
+      <div>
+        <h1>Daktilo Playground</h1>
+        <p>Kağıt, mürekkep ve mekanik ses — sıfır bağımlılık, &lt; 5 KB.</p>
+      </div>
+      <span class="install"><code>npm i daktilo-js</code><button type="button" data-copy="npm i daktilo-js">Kopyala</button></span>
+    </header>
+
+    <main>
+      <form class="panel" id="controls" autocomplete="off">
+        <fieldset>
+          <legend>Kağıt</legend>
+          <label>Tema
+            <select name="paper">
+              <option value="vintage">vintage — saman kağıdı</option>
+              <option value="clean">clean — modern beyaz</option>
+              <option value="carbon">carbon — karbon (koyu)</option>
+            </select>
+          </label>
+          <div class="grid2">
+            <label>Şerit rengi
+              <input type="color" name="ribbonColor" value="#c84b31" />
+            </label>
+            <label>Genişlik
+              <select name="maxWidth">
+                <option>50ch</option>
+                <option selected>65ch</option>
+                <option>80ch</option>
+              </select>
+            </label>
+          </div>
+          <label class="inline"><input type="checkbox" name="customRibbon" /> Temanın şerit rengini ez</label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Mürekkep</legend>
+          <label><span class="row">Mürekkep eskimesi (inkWear) <output data-for="inkWear"></output></span>
+            <input type="range" name="inkWear" min="0" max="1" step="0.05" value="0.35" />
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Yazım</legend>
+          <label class="inline"><input type="checkbox" name="animate" checked /> Harf harf yaz (animate)</label>
+          <label><span class="row">Hız (ms / harf) <output data-for="speed"></output></span>
+            <input type="range" name="speed" min="5" max="150" step="5" value="45" />
+          </label>
+          <label><span class="row">Hata oranı (typoRate) <output data-for="typoRate"></output></span>
+            <input type="range" name="typoRate" min="0" max="0.2" step="0.01" value="0.04" />
+          </label>
+          <label>Overstrike karakteri
+            <select name="overstrikeChar">
+              <option value="x">x</option>
+              <option value="-">-</option>
+            </select>
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Ses</legend>
+          <label class="inline"><input type="checkbox" name="sound" /> Mekanik ses (Web Audio)</label>
+          <p class="hint">Tarayıcılar sesi ilk tıklamadan sonra açar.</p>
+          <label><span class="row">Ses seviyesi <output data-for="volume"></output></span>
+            <input type="range" name="volume" min="0" max="1" step="0.05" value="0.4" />
+          </label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Evrak damgası</legend>
+          <label class="inline"><input type="checkbox" name="stamp" checked /> Üst bilgi ve damga</label>
+          <div class="grid2">
+            <label>Kayıt no <input type="text" name="docNo" value="#84-A" /></label>
+            <label>Derece <input type="text" name="classification" value="ARŞİV" /></label>
+          </div>
+          <label>Yazan <input type="text" name="author" value="" placeholder="(isteğe bağlı)" /></label>
+        </fieldset>
+
+        <fieldset>
+          <legend>Metin</legend>
+          <label>Kendi metnini yaz (boş satır = yeni paragraf)
+            <textarea name="text">Gece Notları
+
+Mekanik tuşların kağıt üzerindeki izi, dijital ekranın soğukluğunu kırar. Her harf biraz eğri, biraz soluk; şerit eskidikçe kelimeler de yaşlanır.
+
+Yanlış bir tuşa bastığında geri dönüp silemezsin. Üzerine bir x basar, yoluna devam edersin.</textarea>
+          </label>
+        </fieldset>
+      </form>
+
+      <section class="stage">
+        <div class="stage-bar">
+          <button type="button" class="ghost" id="skip">Atla</button>
+          <button type="button" id="replay">Yeniden yaz</button>
+        </div>
+        <article id="sheet"></article>
+
+        <div class="code">
+          <div class="code-bar"><span>Yapılandırma</span><button type="button" id="copy-code">Kopyala</button></div>
+          <pre><code id="code"></code></pre>
+        </div>
+      </section>
+    </main>
+
+    <script src="../dist/index.global.js"></script>
+    <script>
+      const DEFAULTS = {
+        paper: 'vintage', maxWidth: '65ch', inkWear: 0.35, animate: false, speed: 45,
+        typoRate: 0.02, overstrikeChar: 'x', sound: false, volume: 0.4,
+      };
+      const THEME_RIBBONS = { vintage: '#c84b31', clean: '#1d4ed8', carbon: '#f59e0b' };
+
+      const form = document.getElementById('controls');
+      const sheet = document.getElementById('sheet');
+      const codeEl = document.getElementById('code');
+      let instance = null;
+      let timer = 0;
+
+      function readOptions() {
+        const f = form.elements;
+        const options = {
+          paper: f.paper.value,
+          maxWidth: f.maxWidth.value,
+          inkWear: Number(f.inkWear.value),
+          animate: f.animate.checked,
+          speed: Number(f.speed.value),
+          typoRate: Number(f.typoRate.value),
+          overstrikeChar: f.overstrikeChar.value,
+          sound: f.sound.checked,
+          volume: Number(f.volume.value),
+        };
+        if (f.customRibbon.checked) options.ribbonColor = f.ribbonColor.value;
+        if (f.stamp.checked) {
+          options.stamp = { docNo: f.docNo.value, classification: f.classification.value };
+          if (f.author.value) options.stamp.author = f.author.value;
+        }
+        return options;
+      }
+
+      function renderText(text) {
+        const blocks = text.split(/\n\s*\n/).map((b) => b.trim()).filter(Boolean);
+        sheet.replaceChildren(
+          ...blocks.map((block, i) => {
+            const el = document.createElement(i === 0 && blocks.length > 1 && block.length < 60 ? 'h1' : 'p');
+            el.textContent = block;
+            return el;
+          }),
+        );
+      }
+
+      function renderCode(options) {
+        const diff = Object.fromEntries(
+          Object.entries(options).filter(([key, value]) => key === 'paper' || value !== DEFAULTS[key]),
+        );
+        const body = JSON.stringify(diff, null, 2).replace(/"([a-zA-Z]+)":/g, '$1:').replace(/"/g, "'");
+        codeEl.textContent = `new Daktilo.Daktilo('#yazi', ${body});`;
+      }
+
+      function syncOutputs() {
+        form.querySelectorAll('output[data-for]').forEach((out) => {
+          out.textContent = form.elements[out.dataset.for].value;
+        });
+        if (!form.elements.customRibbon.checked) {
+          form.elements.ribbonColor.value = THEME_RIBBONS[form.elements.paper.value];
+        }
+      }
+
+      function apply() {
+        instance?.destroy();
+        renderText(form.elements.text.value);
+        const options = readOptions();
+        instance = new Daktilo.Daktilo(sheet, options);
+        renderCode(options);
+      }
+
+      form.addEventListener('input', (event) => {
+        if (event.target.name === 'ribbonColor') form.elements.customRibbon.checked = true;
+        syncOutputs();
+        clearTimeout(timer);
+        timer = setTimeout(apply, 250);
+      });
+      form.addEventListener('submit', (event) => event.preventDefault());
+      document.getElementById('replay').addEventListener('click', apply);
+      document.getElementById('skip').addEventListener('click', () => instance?.skip());
+
+      async function copy(text, button) {
+        await navigator.clipboard.writeText(text);
+        const label = button.textContent;
+        button.textContent = 'Kopyalandı';
+        setTimeout(() => (button.textContent = label), 1200);
+      }
+      document.querySelectorAll('[data-copy]').forEach((button) =>
+        button.addEventListener('click', () => copy(button.dataset.copy, button)),
+      );
+      document.getElementById('copy-code').addEventListener('click', (event) =>
+        copy(codeEl.textContent, event.currentTarget),
+      );
+
+      syncOutputs();
+      apply();
+    </script>
+  </body>
+</html>
