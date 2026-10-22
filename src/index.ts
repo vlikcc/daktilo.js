@@ -1,3 +1,10 @@
 export { Daktilo } from './daktilo';
 export { MechanicalSoundEngine } from './audio';
-export type { DaktiloOptions, DaktiloTarget, PaperPreset, ResolvedOptions, StampMetadata } from './types';
+export type {
+  DaktiloOptions,
+  DaktiloTarget,
+  PaperPreset,
+  ResolvedOptions,
+  SoundEngine,
+  StampMetadata,
+} from './types';

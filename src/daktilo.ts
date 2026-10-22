@@ -5,7 +5,7 @@ import { resolveOptions } from './options';
 import { renderStamp } from './stamp';
 import { injectStyles } from './styles';
 import { Typist } from './typist';
-import type { DaktiloOptions, DaktiloTarget, ResolvedOptions } from './types';
+import type { DaktiloOptions, DaktiloTarget, ResolvedOptions, SoundEngine } from './types';
 
 // Aynı eleman yeniden başlatıldığında (ör. React StrictMode) önceki örneğin izleri temizlenir.
 const activeMounts = new WeakMap<HTMLElement, () => void>();
@@ -20,7 +20,7 @@ export class Daktilo {
   readonly options: ResolvedOptions;
   /** Tüm yazım animasyonları bittiğinde (veya atlandığında / iptal edildiğinde) çözülür. */
   readonly finished: Promise<void>;
-  #sound: MechanicalSoundEngine;
+  #sound: SoundEngine;
   #cleanups: Array<() => void> = [];
   #skips: Array<() => void> = [];
 
@@ -28,10 +28,11 @@ export class Daktilo {
     this.options = resolveOptions(options);
     this.elements = canUseDOM() ? resolveTargets(target) : [];
     const reduced = this.options.respectReducedMotion && prefersReducedMotion();
-    this.#sound = new MechanicalSoundEngine(
-      this.options.sound && !reduced && this.elements.length > 0,
-      this.options.volume,
-    );
+    const { sound, volume } = this.options;
+    const audible = !!sound && !reduced && this.elements.length > 0;
+    if (typeof sound === 'object' && !audible) sound.dispose();
+    this.#sound =
+      audible && typeof sound === 'object' ? sound : new MechanicalSoundEngine(audible, volume);
     if (this.elements.length) injectStyles(this.options.fonts);
     const animate = this.options.animate && !reduced;
     this.finished = Promise.all(this.elements.map((el) => this.#mount(el, animate))).then(() => undefined);

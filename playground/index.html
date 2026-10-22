@@ -171,8 +171,14 @@
 
         <fieldset>
           <legend>Ses</legend>
-          <label class="inline"><input type="checkbox" name="sound" /> Mekanik ses (Web Audio)</label>
+          <label class="inline"><input type="checkbox" name="sound" /> Mekanik ses</label>
           <p class="hint">Tarayıcılar sesi ilk tıklamadan sonra açar.</p>
+          <label>Ses kaynağı
+            <select name="soundSource">
+              <option value="sample">Gerçek daktilo kaydı (mp3)</option>
+              <option value="synth">Sentez (Web Audio, dosyasız)</option>
+            </select>
+          </label>
           <label><span class="row">Ses seviyesi <output data-for="volume"></output></span>
             <input type="range" name="volume" min="0" max="1" step="0.05" value="0.4" />
           </label>
@@ -215,7 +221,10 @@ Yanlış bir tuşa bastığında geri dönüp silemezsin. Üzerine bir x basar, 
     </main>
 
     <script src="../dist/index.global.js"></script>
+    <script src="../dist/samples.global.js"></script>
     <script>
+      const SAMPLES = { key: 'sounds/typewriter-keys.mp3', bell: 'sounds/typewriter-bell.mp3' };
+      const ENGINE_PLACEHOLDER = '__engine__';
       const DEFAULTS = {
         paper: 'vintage', maxWidth: '65ch', inkWear: 0.35, animate: false, speed: 45,
         typoRate: 0.02, overstrikeChar: 'x', sound: false, volume: 0.4,
@@ -260,12 +269,22 @@ Yanlış bir tuşa bastığında geri dönüp silemezsin. Üzerine bir x basar, 
         );
       }
 
+      const usesSamples = (options) => options.sound && form.elements.soundSource.value === 'sample';
+
       function renderCode(options) {
+        const sample = usesSamples(options);
+        const config = sample ? { ...options, sound: ENGINE_PLACEHOLDER, volume: DEFAULTS.volume } : options;
         const diff = Object.fromEntries(
-          Object.entries(options).filter(([key, value]) => key === 'paper' || value !== DEFAULTS[key]),
+          Object.entries(config).filter(([key, value]) => key === 'paper' || value !== DEFAULTS[key]),
         );
-        const body = JSON.stringify(diff, null, 2).replace(/"([a-zA-Z]+)":/g, '$1:').replace(/"/g, "'");
-        codeEl.textContent = `new Daktilo.Daktilo('#yazi', ${body});`;
+        const body = JSON.stringify(diff, null, 2)
+          .replace(/"([a-zA-Z]+)":/g, '$1:')
+          .replace(/"/g, "'")
+          .replace(`sound: '${ENGINE_PLACEHOLDER}'`, 'sound');
+        const engine = sample
+          ? `const sound = new DaktiloSamples.SampleSoundEngine({\n  key: '${SAMPLES.key}',\n  bell: '${SAMPLES.bell}',\n  volume: ${options.volume},\n});\n\n`
+          : '';
+        codeEl.textContent = `${engine}new Daktilo.Daktilo('#yazi', ${body});`;
       }
 
       function syncOutputs() {
@@ -281,7 +300,10 @@ Yanlış bir tuşa bastığında geri dönüp silemezsin. Üzerine bir x basar, 
         instance?.destroy();
         renderText(form.elements.text.value);
         const options = readOptions();
-        instance = new Daktilo.Daktilo(sheet, options);
+        const sound = usesSamples(options)
+          ? new DaktiloSamples.SampleSoundEngine({ ...SAMPLES, volume: options.volume })
+          : options.sound;
+        instance = new Daktilo.Daktilo(sheet, { ...options, sound });
         renderCode(options);
       }
 

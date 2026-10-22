@@ -8,6 +8,13 @@ export interface StampMetadata {
   classification?: string;
 }
 
+/** Yazım motorunun çaldığı sesler. Örnek sahiplenilir: `destroy()` onu da kapatır. */
+export interface SoundEngine {
+  playKeyClick(isSpace?: boolean): void;
+  playCarriageDing(): void;
+  dispose(): void;
+}
+
 export interface DaktiloOptions {
   /** Varsayılan: 'vintage' */
   paper?: PaperPreset;
@@ -25,9 +32,13 @@ export interface DaktiloOptions {
   typoRate?: number;
   /** Hata üzerine basılacak karakter. Varsayılan: 'x' */
   overstrikeChar?: 'x' | '-';
-  /** Web Audio mekanik ses motoru. Varsayılan: false */
-  sound?: boolean;
-  /** Ses seviyesi (0.0 - 1.0). Varsayılan: 0.4 */
+  /**
+   * `true`: Web Audio ile dosyasız sentezlenen mekanik sesler.
+   * Bir `SoundEngine` (ör. `daktilo-js/samples` içindeki `SampleSoundEngine`) verilirse o kullanılır.
+   * Varsayılan: false
+   */
+  sound?: boolean | SoundEngine;
+  /** Sentez ses seviyesi (0.0 - 1.0). Varsayılan: 0.4 */
   volume?: number;
   /** Üst evrak damgası. Varsayılan: null */
   stamp?: StampMetadata | null;

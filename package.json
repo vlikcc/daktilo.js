@@ -26,6 +26,16 @@
         "types": "./dist/index.d.ts",
         "default": "./dist/index.cjs"
       }
+    },
+    "./samples": {
+      "import": {
+        "types": "./dist/samples.d.mts",
+        "default": "./dist/samples.mjs"
+      },
+      "require": {
+        "types": "./dist/samples.d.ts",
+        "default": "./dist/samples.cjs"
+      }
     }
   },
   "files": [
@@ -33,11 +43,12 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "build": "tsup",
+    "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsup",
     "dev": "tsup --watch",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "size": "node scripts/size.mjs",
+    "playground": "npm run build && node scripts/serve.mjs",
     "prepublishOnly": "npm run typecheck && npm test && npm run build && npm run size"
   },
   "devDependencies": {

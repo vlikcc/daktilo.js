@@ -1,3 +1,5 @@
+import type { SoundEngine } from './types';
+
 type AudioContextCtor = typeof AudioContext;
 
 const UNLOCK_EVENTS = ['pointerdown', 'keydown', 'touchend'] as const;
@@ -11,15 +13,15 @@ function audioContextCtor(): AudioContextCtor | undefined {
 }
 
 /** Harici ses dosyası kullanmadan Web Audio API ile mekanik daktilo sesleri sentezler. */
-export class MechanicalSoundEngine {
+export class MechanicalSoundEngine implements SoundEngine {
+  protected volume: number;
   #ctx: AudioContext | null = null;
   #buffers = new Map<boolean, AudioBuffer>();
   #enabled: boolean;
-  #volume: number;
 
   constructor(enabled = false, volume = 0.4) {
     this.#enabled = enabled && !!audioContextCtor();
-    this.#volume = volume;
+    this.volume = volume;
     if (!this.#enabled) return;
     // Autoplay politikası: bağlam ancak bir kullanıcı etkileşiminden sonra çalışabilir.
     UNLOCK_EVENTS.forEach((type) => window.addEventListener(type, this.#unlock, { once: true, passive: true }));
@@ -29,12 +31,12 @@ export class MechanicalSoundEngine {
   }
 
   setVolume(volume: number): void {
-    this.#volume = Math.min(1, Math.max(0, volume));
+    this.volume = Math.min(1, Math.max(0, volume));
   }
 
   /** Tuş vuruşu (bandpass, 1100-1600Hz) veya boşluk tuşu (lowpass, 400-600Hz) sesi. */
   playKeyClick(isSpace = false): void {
-    const ctx = this.#ready();
+    const ctx = this.ready();
     if (!ctx) return;
     const now = ctx.currentTime;
     const source = ctx.createBufferSource();
@@ -47,7 +49,7 @@ export class MechanicalSoundEngine {
     filter.Q.setValueAtTime(isSpace ? 1.2 : 2.5, now);
 
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(this.#volume * (isSpace ? 1.6 : 1), now);
+    gain.gain.setValueAtTime(this.volume * (isSpace ? 1.6 : 1), now);
 
     source.connect(filter).connect(gain).connect(ctx.destination);
     source.start(now);
@@ -55,7 +57,7 @@ export class MechanicalSoundEngine {
 
   /** Satır sonu çanı: 2200Hz sine ve metalik tını için uyumsuz (inharmonic) bir üst kısmi. */
   playCarriageDing(): void {
-    const ctx = this.#ready();
+    const ctx = this.ready();
     if (!ctx) return;
     const now = ctx.currentTime;
     for (const [frequency, level] of [
@@ -66,7 +68,7 @@ export class MechanicalSoundEngine {
       const gain = ctx.createGain();
       osc.type = 'sine';
       osc.frequency.setValueAtTime(frequency, now);
-      gain.gain.setValueAtTime(this.#volume * level, now);
+      gain.gain.setValueAtTime(this.volume * level, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.65);
       osc.connect(gain).connect(ctx.destination);
       osc.start(now);
@@ -80,6 +82,12 @@ export class MechanicalSoundEngine {
     UNLOCK_EVENTS.forEach((type) => window.removeEventListener(type, this.#unlock));
   }
 
+  /** Ses çalınabilir durumdaysa (etkin, kilidi açık, ses > 0) bağlamı döndürür. */
+  protected ready(): AudioContext | null {
+    const ctx = this.#ctx;
+    return this.#enabled && this.volume > 0 && ctx && ctx.state === 'running' ? ctx : null;
+  }
+
   #unlock = (): void => {
     if (!this.#enabled) return;
     const Ctor = audioContextCtor();
@@ -88,11 +96,6 @@ export class MechanicalSoundEngine {
     this.#ctx = sharedContext;
     if (this.#ctx.state === 'suspended') void this.#ctx.resume().catch(() => undefined);
   };
-
-  #ready(): AudioContext | null {
-    const ctx = this.#ctx;
-    return this.#enabled && this.#volume > 0 && ctx && ctx.state === 'running' ? ctx : null;
-  }
 
   // Mekanik darbe zarfı: keskin atak, üstel sönüm. Gürültü bir kez üretilir; her vuruşta filtre değişir.
   #noiseBuffer(ctx: AudioContext, isSpace: boolean): AudioBuffer {

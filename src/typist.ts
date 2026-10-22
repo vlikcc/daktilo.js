@@ -1,8 +1,7 @@
-import type { MechanicalSoundEngine } from './audio';
 import { isSkipped } from './dom';
 import { inkSpan } from './ink';
 import { neighborKey } from './keyboard';
-import type { ResolvedOptions } from './types';
+import type { ResolvedOptions, SoundEngine } from './types';
 
 const CANCELLED = Symbol('daktilo-cancelled');
 const LETTER = /\p{L}/u;
@@ -19,7 +18,7 @@ const preservesWhitespace = (el: Element | null): boolean =>
  */
 export class Typist {
   #opts: ResolvedOptions;
-  #sound: MechanicalSoundEngine;
+  #sound: SoundEngine;
   #cancelled = false;
   #timer: ReturnType<typeof setTimeout> | undefined;
   #wake: (() => void) | null = null;
@@ -31,7 +30,7 @@ export class Typist {
   #pendingReturn = false;
   #lineTop = NaN;
 
-  constructor(opts: ResolvedOptions, sound: MechanicalSoundEngine) {
+  constructor(opts: ResolvedOptions, sound: SoundEngine) {
     this.#opts = opts;
     this.#sound = sound;
     this.#cursor.className = 'daktilo-cursor';
