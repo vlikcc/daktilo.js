@@ -155,8 +155,8 @@
         <fieldset>
           <legend>Yazım</legend>
           <label class="inline"><input type="checkbox" name="animate" checked /> Harf harf yaz (animate)</label>
-          <label><span class="row">Hız (ms / harf) <output data-for="speed"></output></span>
-            <input type="range" name="speed" min="5" max="150" step="5" value="45" />
+          <label><span class="row">Hız (harf / sn) <output data-for="cps"></output></span>
+            <input type="range" name="cps" min="2" max="40" step="1" value="22" />
           </label>
           <label><span class="row">Hata oranı (typoRate) <output data-for="typoRate"></output></span>
             <input type="range" name="typoRate" min="0" max="0.2" step="0.01" value="0.04" />
@@ -244,7 +244,7 @@ Yanlış bir tuşa bastığında geri dönüp silemezsin. Üzerine bir x basar, 
           maxWidth: f.maxWidth.value,
           inkWear: Number(f.inkWear.value),
           animate: f.animate.checked,
-          speed: Number(f.speed.value),
+          speed: Math.round(1000 / Number(f.cps.value)),
           typoRate: Number(f.typoRate.value),
           overstrikeChar: f.overstrikeChar.value,
           sound: f.sound.checked,
