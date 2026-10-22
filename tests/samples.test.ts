@@ -22,6 +22,7 @@ interface Played {
 }
 
 const played: Played[] = [];
+const gains: Array<ReturnType<typeof param>> = [];
 const keyBuffer = { duration: 2, sampleRate: RATE, getChannelData: () => recording([0.2, 0.5, 0.9]) };
 const bellBuffer = { duration: 1.9, sampleRate: RATE, getChannelData: () => new Float32Array(10) };
 
@@ -53,7 +54,11 @@ class FakeAudioContext {
     return node;
   };
   createBiquadFilter = () => ({ frequency: param(), Q: param(), connect: (next: unknown) => next });
-  createGain = () => ({ gain: param(), connect: (next: unknown) => next });
+  createGain = () => {
+    const gain = param();
+    gains.push(gain);
+    return { gain, connect: (next: unknown) => next };
+  };
   createOscillator = () => ({ frequency: param(), connect: (next: unknown) => next, start: vi.fn(), stop: vi.fn() });
 }
 
@@ -66,6 +71,7 @@ async function flush(): Promise<void> {
 beforeEach(() => {
   setReducedMotion(false);
   played.length = 0;
+  gains.length = 0;
   vi.stubGlobal('AudioContext', FakeAudioContext);
   vi.stubGlobal(
     'fetch',
@@ -106,6 +112,25 @@ describe('SampleSoundEngine', () => {
     expect(last.buffer).toBe(keyBuffer);
     expect(last.args).toHaveLength(3);
     expect(last.rate).toBeGreaterThanOrEqual(0.95);
+    engine.dispose();
+  });
+
+  it('vuruşu tam seviyede çalar, yalnızca son 15 ms içinde kısar', async () => {
+    const engine = new SampleSoundEngine({ key: 'keys', volume: 0.5 });
+    window.dispatchEvent(new Event('pointerdown'));
+    engine.playKeyClick();
+    await flush();
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
+    engine.playKeyClick();
+
+    const { args, rate } = played[played.length - 1];
+    const end = (args[2] as number) / rate;
+    const gain = gains[gains.length - 1];
+    expect(gain.setValueAtTime.mock.calls).toEqual([
+      [0.5, 0],
+      [0.5, expect.closeTo(end - 0.015, 6)],
+    ]);
+    expect(gain.linearRampToValueAtTime).toHaveBeenCalledWith(0, expect.closeTo(end, 6));
     engine.dispose();
   });
 

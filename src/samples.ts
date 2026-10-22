@@ -95,7 +95,7 @@ export class SampleSoundEngine extends MechanicalSoundEngine {
     return ctx;
   }
 
-  /** `hit` verilirse kaydın yalnızca o dilimini, sonu tıklamasın diye sönümleyerek çalar. */
+  /** `hit` verilirse kaydın yalnızca o dilimini çalar; kesimde tıkırtı olmasın diye son 15 ms'yi kısar. */
   #play(ctx: AudioContext, buffer: AudioBuffer, rate: number, hit?: Hit): void {
     const now = ctx.currentTime;
     const source = ctx.createBufferSource();
@@ -103,7 +103,11 @@ export class SampleSoundEngine extends MechanicalSoundEngine {
     source.playbackRate.value = rate;
     const gain = ctx.createGain();
     gain.gain.setValueAtTime(this.volume, now);
-    if (hit) gain.gain.linearRampToValueAtTime(0, now + hit[1] / rate);
+    if (hit) {
+      const end = now + hit[1] / rate;
+      gain.gain.setValueAtTime(this.volume, Math.max(now, end - 0.015));
+      gain.gain.linearRampToValueAtTime(0, end);
+    }
     source.connect(gain).connect(ctx.destination);
     if (hit) source.start(now, hit[0], hit[1]);
     else source.start(now);
