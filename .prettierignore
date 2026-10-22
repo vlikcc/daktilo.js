@@ -1,0 +1,8 @@
+dist
+coverage
+playwright-report
+test-results
+package-lock.json
+docs/*.pdf
+.changeset/*.md
+playground/index.html

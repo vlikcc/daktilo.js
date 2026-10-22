@@ -1,5 +1,17 @@
 const SKIPPED_TAGS = new Set(['script', 'style', 'noscript', 'textarea', 'template', 'svg', 'math']);
 
+/** CSS'in daralttığı boşluklar; bölünmez boşluk (U+00A0) bunlara dahil değildir. */
+export const COLLAPSIBLE = /[ \t\n\r\f]+/g;
+
+let segmenter: Intl.Segmenter | undefined;
+
+/** Metni kullanıcının gördüğü karakterlere (grapheme) böler: birleşik aksanlar ve emoji dizileri parçalanmaz. */
+export function graphemes(text: string): Iterable<string> {
+  if (typeof Intl === 'undefined' || !Intl.Segmenter) return text;
+  segmenter ??= new Intl.Segmenter();
+  return Array.from(segmenter.segment(text), (s) => s.segment);
+}
+
 export const canUseDOM = (): boolean => typeof window !== 'undefined' && typeof document !== 'undefined';
 
 export const prefersReducedMotion = (): boolean =>

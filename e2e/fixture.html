@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="tr">
+  <head>
+    <meta charset="utf-8" />
+    <title>daktilo-js e2e</title>
+    <style>
+      body {
+        margin: 0;
+        font: 16px/1.5 monospace;
+      }
+      #scroller {
+        height: 240px;
+        overflow: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="scroller">
+      <article id="sheet"></article>
+      <div style="height: 2000px"></div>
+    </div>
+    <textarea id="writer"></textarea>
+    <script src="../dist/index.global.js"></script>
+    <script src="../dist/editor.global.js"></script>
+    <script>
+      // Testlerin çağırdığı yardımcılar: sesler sayılır, olaylar kaydedilir.
+      window.calls = { key: 0, ding: 0, chars: 0, lines: 0 };
+      window.countingSound = () => ({
+        playKeyClick: () => window.calls.key++,
+        playCarriageDing: () => window.calls.ding++,
+        dispose() {},
+      });
+      window.start = (html, options = {}) => {
+        const sheet = document.getElementById('sheet');
+        sheet.innerHTML = html;
+        window.daktilo = new Daktilo.Daktilo(sheet, {
+          animate: true,
+          fonts: false,
+          typoRate: 0,
+          inkWear: 0,
+          speed: 1,
+          ...options,
+          onChar: () => window.calls.chars++,
+          onLine: () => window.calls.lines++,
+        });
+        return window.daktilo.finished;
+      };
+    </script>
+  </body>
+</html>

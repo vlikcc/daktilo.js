@@ -108,13 +108,21 @@
       .code-bar button { padding: 0.2rem 0.6rem; background: transparent; color: #e9e5dc; border-color: #57534e; }
       .code pre { margin: 0; padding: 1rem; overflow-x: auto; font-size: 0.85rem; }
       .hint { color: var(--muted); font-size: 0.75rem; margin: -0.4rem 0 0.7rem; }
+      .stage-bar button[aria-pressed='true'] { background: var(--accent); border-color: var(--accent); color: #f4f1ea; }
+      .append { margin: 1rem 0 0; }
+      .append label { display: block; margin-bottom: 0.3rem; }
+      .append-row { display: flex; gap: 0.5rem; }
+      .append-row input { flex: 1; }
+      h2.section { font: 400 1.3rem 'Special Elite', monospace; margin: 2.5rem 0 0.75rem; }
+      h2.section + .hint { margin: 0 0 0.5rem; }
+      #writer { margin-top: 0; }
     </style>
   </head>
   <body>
     <header class="site">
       <div>
         <h1>Daktilo Playground</h1>
-        <p>Kağıt, mürekkep ve mekanik ses — sıfır bağımlılık, &lt; 5 KB.</p>
+        <p>Kağıt, mürekkep ve mekanik ses — sıfır bağımlılık, &lt; 6 KB.</p>
       </div>
       <span class="install"><code>npm i daktilo-js</code><button type="button" data-copy="npm i daktilo-js">Kopyala</button></span>
     </header>
@@ -161,12 +169,24 @@
           <label><span class="row">Hata oranı (typoRate) <output data-for="typoRate"></output></span>
             <input type="range" name="typoRate" min="0" max="0.2" step="0.01" value="0.04" />
           </label>
-          <label>Overstrike karakteri
-            <select name="overstrikeChar">
-              <option value="x">x</option>
-              <option value="-">-</option>
-            </select>
-          </label>
+          <div class="grid2">
+            <label>Overstrike karakteri
+              <select name="overstrikeChar">
+                <option value="x">x</option>
+                <option value="-">-</option>
+              </select>
+            </label>
+            <label>Klavye düzeni
+              <select name="keyboard">
+                <option value="TURKISH_Q">Türkçe Q</option>
+                <option value="TURKISH_F">Türkçe F</option>
+                <option value="QWERTY">QWERTY</option>
+                <option value="QWERTZ">QWERTZ</option>
+                <option value="AZERTY">AZERTY</option>
+              </select>
+            </label>
+          </div>
+          <label class="inline"><input type="checkbox" name="autoScroll" /> İmleci takip et (autoScroll)</label>
         </fieldset>
 
         <fieldset>
@@ -191,7 +211,15 @@
             <label>Kayıt no <input type="text" name="docNo" value="#84-A" /></label>
             <label>Derece <input type="text" name="classification" value="ARŞİV" /></label>
           </div>
-          <label>Yazan <input type="text" name="author" value="" placeholder="(isteğe bağlı)" /></label>
+          <div class="grid2">
+            <label>Yazan <input type="text" name="author" value="" placeholder="(isteğe bağlı)" /></label>
+            <label>Etiket dili
+              <select name="stampLang">
+                <option value="tr">Türkçe</option>
+                <option value="en">English</option>
+              </select>
+            </label>
+          </div>
         </fieldset>
 
         <fieldset>
@@ -208,10 +236,24 @@ Yanlış bir tuşa bastığında geri dönüp silemezsin. Üzerine bir x basar, 
 
       <section class="stage">
         <div class="stage-bar">
+          <button type="button" class="ghost" id="pause" aria-pressed="false">Duraklat</button>
+          <button type="button" class="ghost" id="mute" aria-pressed="false">Sessiz</button>
           <button type="button" class="ghost" id="skip">Atla</button>
           <button type="button" id="replay">Yeniden yaz</button>
         </div>
         <article id="sheet"></article>
+
+        <form class="append" id="append">
+          <label for="append-text">Kağıda ekle — <code>daktilo.type()</code></label>
+          <div class="append-row">
+            <input type="text" id="append-text" value="Ertesi sabah şerit yeniden değiştirildi." />
+            <button type="submit">Yaz</button>
+          </div>
+        </form>
+
+        <h2 class="section">Yazar modu <code>daktilo-js/editor</code></h2>
+        <p class="hint">Kendi metnini yaz: tuş, boşluk ve satır sonu sesleri çalar; 60. sütunda kenar çanı uyarır. Silme engellidir.</p>
+        <textarea id="writer" aria-label="Yazar modu alanı" placeholder="Buraya yaz…"></textarea>
 
         <div class="code">
           <div class="code-bar"><span>Yapılandırma</span><button type="button" id="copy-code">Kopyala</button></div>
@@ -222,12 +264,16 @@ Yanlış bir tuşa bastığında geri dönüp silemezsin. Üzerine bir x basar, 
 
     <script src="../dist/index.global.js"></script>
     <script src="../dist/samples.global.js"></script>
+    <script src="../dist/keyboards.global.js"></script>
+    <script src="../dist/editor.global.js"></script>
     <script>
       const SAMPLES = { key: 'sounds/typewriter-keys.mp3', bell: 'sounds/typewriter-bell.mp3' };
       const ENGINE_PLACEHOLDER = '__engine__';
+      const KEYBOARD_PLACEHOLDER = '__keyboard__';
+      const EN_LABELS = { docNo: 'REF', date: 'DATE', author: 'BY' };
       const DEFAULTS = {
         paper: 'vintage', maxWidth: '65ch', inkWear: 0.35, animate: false, speed: 45,
-        typoRate: 0.02, overstrikeChar: 'x', sound: false, volume: 0.4,
+        typoRate: 0.02, overstrikeChar: 'x', autoScroll: false, sound: false, volume: 0.4,
       };
       const THEME_RIBBONS = { vintage: '#c84b31', clean: '#1d4ed8', carbon: '#f59e0b' };
 
@@ -247,6 +293,7 @@ Yanlış bir tuşa bastığında geri dönüp silemezsin. Üzerine bir x basar, 
           speed: Math.round(1000 / Number(f.cps.value)),
           typoRate: Number(f.typoRate.value),
           overstrikeChar: f.overstrikeChar.value,
+          autoScroll: f.autoScroll.checked,
           sound: f.sound.checked,
           volume: Number(f.volume.value),
         };
@@ -254,6 +301,7 @@ Yanlış bir tuşa bastığında geri dönüp silemezsin. Üzerine bir x basar, 
         if (f.stamp.checked) {
           options.stamp = { docNo: f.docNo.value, classification: f.classification.value };
           if (f.author.value) options.stamp.author = f.author.value;
+          if (f.stampLang.value === 'en') Object.assign(options.stamp, { labels: EN_LABELS, locale: 'en-US' });
         }
         return options;
       }
@@ -273,14 +321,17 @@ Yanlış bir tuşa bastığında geri dönüp silemezsin. Üzerine bir x basar, 
 
       function renderCode(options) {
         const sample = usesSamples(options);
-        const config = sample ? { ...options, sound: ENGINE_PLACEHOLDER, volume: DEFAULTS.volume } : options;
+        const config = sample ? { ...options, sound: ENGINE_PLACEHOLDER, volume: DEFAULTS.volume } : { ...options };
+        const keyboard = form.elements.keyboard.value;
+        if (keyboard !== 'TURKISH_Q') config.keyboard = KEYBOARD_PLACEHOLDER;
         const diff = Object.fromEntries(
           Object.entries(config).filter(([key, value]) => key === 'paper' || value !== DEFAULTS[key]),
         );
         const body = JSON.stringify(diff, null, 2)
           .replace(/"([a-zA-Z]+)":/g, '$1:')
           .replace(/"/g, "'")
-          .replace(`sound: '${ENGINE_PLACEHOLDER}'`, 'sound');
+          .replace(`sound: '${ENGINE_PLACEHOLDER}'`, 'sound')
+          .replace(`keyboard: '${KEYBOARD_PLACEHOLDER}'`, `keyboard: DaktiloKeyboards.${keyboard}`);
         const engine = sample
           ? `const sound = new DaktiloSamples.SampleSoundEngine({\n  key: '${SAMPLES.key}',\n  bell: '${SAMPLES.bell}',\n  volume: ${options.volume},\n});\n\n`
           : '';
@@ -303,9 +354,37 @@ Yanlış bir tuşa bastığında geri dönüp silemezsin. Üzerine bir x basar, 
         const sound = usesSamples(options)
           ? new DaktiloSamples.SampleSoundEngine({ ...SAMPLES, volume: options.volume })
           : options.sound;
-        instance = new Daktilo.Daktilo(sheet, { ...options, sound });
+        const keyboard = DaktiloKeyboards[form.elements.keyboard.value];
+        instance = new Daktilo.Daktilo(sheet, { ...options, keyboard, sound });
+        instance.muted = muteButton.getAttribute('aria-pressed') === 'true';
+        setPressed(pauseButton, false);
+        pauseButton.textContent = 'Duraklat';
         renderCode(options);
       }
+
+      const pauseButton = document.getElementById('pause');
+      const muteButton = document.getElementById('mute');
+      function setPressed(button, pressed) {
+        button.setAttribute('aria-pressed', String(pressed));
+      }
+      pauseButton.addEventListener('click', () => {
+        if (!instance) return;
+        instance.paused ? instance.resume() : instance.pause();
+        setPressed(pauseButton, instance.paused);
+        pauseButton.textContent = instance.paused ? 'Sürdür' : 'Duraklat';
+      });
+      muteButton.addEventListener('click', () => {
+        const muted = muteButton.getAttribute('aria-pressed') !== 'true';
+        setPressed(muteButton, muted);
+        if (instance) instance.muted = muted;
+      });
+      document.getElementById('append').addEventListener('submit', (event) => {
+        event.preventDefault();
+        const text = document.getElementById('append-text').value.trim();
+        if (text) instance?.type(text);
+      });
+
+      new DaktiloEditor.DaktiloWriter('#writer', { paper: 'clean', bellColumn: 60, noErase: true, maxWidth: '100%' });
 
       form.addEventListener('input', (event) => {
         if (event.target.name === 'ribbonColor') form.elements.customRibbon.checked = true;

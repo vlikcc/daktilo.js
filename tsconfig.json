@@ -10,7 +10,10 @@
     "noFallthroughCasesInSwitch": true,
     "isolatedModules": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      "daktilo-js": ["./src/index.ts"]
+    }
   },
-  "include": ["src", "tests", "tsup.config.ts", "vitest.config.ts"]
+  "include": ["src", "tests", "e2e", "tsup.config.ts", "vitest.config.ts", "playwright.config.ts", "eslint.config.mjs"]
 }

@@ -32,7 +32,9 @@ class FakeAudioContext {
   sampleRate = RATE;
   destination = {};
   resume = async () => undefined;
-  decodeAudioData = vi.fn(async (data: ArrayBuffer) => ((data as { url?: string }).url === 'bell' ? bellBuffer : keyBuffer));
+  decodeAudioData = vi.fn(async (data: ArrayBuffer) =>
+    (data as { url?: string }).url === 'bell' ? bellBuffer : keyBuffer,
+  );
   createBuffer = (_channels: number, length: number) => {
     const data = new Float32Array(length);
     return { synth: true, getChannelData: () => data };
@@ -62,7 +64,12 @@ class FakeAudioContext {
   createOscillator = () => ({ frequency: param(), connect: (next: unknown) => next, start: vi.fn(), stop: vi.fn() });
 }
 
-const param = () => ({ value: 0, setValueAtTime: vi.fn(), linearRampToValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() });
+const param = () => ({
+  value: 0,
+  setValueAtTime: vi.fn(),
+  linearRampToValueAtTime: vi.fn(),
+  exponentialRampToValueAtTime: vi.fn(),
+});
 
 async function flush(): Promise<void> {
   for (let i = 0; i < 10; i++) await Promise.resolve();

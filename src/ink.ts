@@ -1,4 +1,4 @@
-import { collectTextNodes } from './dom';
+import { collectTextNodes, graphemes } from './dom';
 
 export const INK_BLEED_RATE = 0.03;
 
@@ -30,7 +30,7 @@ export function applyInkWear(root: Node, wear: number): void {
     const frag = document.createDocumentFragment();
     let plain = '';
     let changed = false;
-    for (const char of node.nodeValue ?? '') {
+    for (const char of graphemes(node.nodeValue ?? '')) {
       const span = inkSpan(char, wear);
       if (!span) {
         plain += char;

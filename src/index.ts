@@ -6,5 +6,6 @@ export type {
   PaperPreset,
   ResolvedOptions,
   SoundEngine,
+  StampLabels,
   StampMetadata,
 } from './types';

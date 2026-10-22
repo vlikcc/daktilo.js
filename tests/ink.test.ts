@@ -97,6 +97,8 @@ describe('Daktilo (statik mod)', () => {
     document.body.innerHTML = '<p class="x">a</p><p class="x">b</p>';
     const d = new Daktilo(document.querySelectorAll('.x'));
     expect(d.elements).toHaveLength(2);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
     expect(new Daktilo('#yok').elements).toHaveLength(0);
+    expect(warn).toHaveBeenCalledOnce();
   });
 });

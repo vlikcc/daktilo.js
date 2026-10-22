@@ -1,4 +1,4 @@
-import { isSkipped } from './dom';
+import { COLLAPSIBLE, graphemes, isSkipped } from './dom';
 import { inkSpan } from './ink';
 import { neighborKey } from './keyboard';
 import type { ResolvedOptions, SoundEngine } from './types';
@@ -6,6 +6,10 @@ import type { ResolvedOptions, SoundEngine } from './types';
 const CANCELLED = Symbol('daktilo-cancelled');
 const LETTER = /\p{L}/u;
 const SPACE = /\s/;
+/** Daraltılan (görünmez ardışık) boşluk; bölünmez boşluk görünür kaldığı için hariçtir. */
+const COLLAPSIBLE_CHAR = /^[ \t\n\r\f]+$/;
+/** İçinde yazım hatası yapılmayan elemanlar: kod ve klavye girdisi birebir korunur. */
+const NO_TYPOS = 'code,kbd,samp,pre';
 
 const isBlock = (el: Element): boolean => !/^(inline|contents|none)/.test(getComputedStyle(el).display);
 
@@ -19,7 +23,12 @@ const preservesWhitespace = (el: Element | null): boolean =>
 export class Typist {
   #opts: ResolvedOptions;
   #sound: SoundEngine;
+  /** Kağıt elemanı: satır ölçümü ve olaylar bu elemana göredir. */
+  readonly sheet: HTMLElement;
+  /** `finish()` veya `cancel()` sonrası kalan metin beklemesiz ve sessiz yazılır. */
+  #fast = false;
   #cancelled = false;
+  #paused = false;
   #timer: ReturnType<typeof setTimeout> | undefined;
   #wake: (() => void) | null = null;
   #cursor = document.createElement('span');
@@ -30,18 +39,20 @@ export class Typist {
   #pendingReturn = false;
   #lineTop = NaN;
 
-  constructor(opts: ResolvedOptions, sound: SoundEngine) {
+  constructor(opts: ResolvedOptions, sound: SoundEngine, sheet: HTMLElement) {
     this.#opts = opts;
     this.#sound = sound;
+    this.sheet = sheet;
     this.#cursor.className = 'daktilo-cursor';
     this.#cursor.setAttribute('aria-hidden', 'true');
     this.#cursor.textContent = '█';
   }
 
-  /** `nodes` kökten ayrılmış orijinal çocuklardır. İptal edilirse false döner. */
-  async type(root: Element, nodes: Node[]): Promise<boolean> {
+  /** `nodes` kökten ayrılmış orijinal çocuklardır; yazım `start` çözülünce başlar. İptal edilirse false döner. */
+  async type(root: Element, nodes: Node[], start?: Promise<unknown>): Promise<boolean> {
     root.append(this.#cursor);
     try {
+      if (start) await this.#wait(start);
       for (const node of nodes) await this.#typeNode(node);
       return true;
     } catch (error) {
@@ -52,18 +63,38 @@ export class Typist {
     }
   }
 
-  cancel(): void {
-    this.#cancelled = true;
+  pause(): void {
+    this.#paused = true;
+  }
+
+  resume(): void {
+    if (!this.#paused) return;
+    this.#paused = false;
+    this.#wake?.();
+  }
+
+  /** Kalan metni anında, sessizce ve aynı mürekkep kusurlarıyla yazar. */
+  finish(): void {
+    this.#fast = true;
     clearTimeout(this.#timer);
     this.#wake?.();
   }
 
-  async #sleep(ms: number): Promise<void> {
-    if (!this.#cancelled) {
+  cancel(): void {
+    this.#cancelled = true;
+    this.finish();
+  }
+
+  /** Süre (ms) veya söz kadar, ardından duraklatıldıysa devam ettirilene kadar bekler. */
+  async #wait(until: number | Promise<unknown>): Promise<void> {
+    let first: number | Promise<unknown> | undefined = until;
+    while (!this.#fast && (first !== undefined || this.#paused)) {
       await new Promise<void>((resolve) => {
         this.#wake = resolve;
-        this.#timer = setTimeout(resolve, ms);
+        if (typeof first === 'number') this.#timer = setTimeout(resolve, first);
+        else void first?.then(() => resolve());
       });
+      first = undefined;
     }
     if (this.#cancelled) throw CANCELLED;
   }
@@ -97,22 +128,24 @@ export class Typist {
   }
 
   async #typeText(node: Text): Promise<void> {
-    const pre = preservesWhitespace(this.#cursor.parentElement);
+    const parent = this.#cursor.parentElement;
+    const pre = preservesWhitespace(parent);
+    const typos = !parent?.closest(NO_TYPOS);
     const raw = node.nodeValue ?? '';
     node.nodeValue = '';
     this.#place(node);
     this.#text = node;
-    for (const char of pre ? raw : raw.replace(/\s+/g, ' ')) await this.#typeChar(char, pre);
+    for (const char of graphemes(pre ? raw : raw.replace(COLLAPSIBLE, ' '))) await this.#typeChar(char, pre, typos);
   }
 
-  async #typeChar(char: string, pre: boolean): Promise<void> {
-    const space = SPACE.test(char);
-    if (pre && char === '\n') {
+  async #typeChar(char: string, pre: boolean, typos: boolean): Promise<void> {
+    if (pre && char.includes('\n')) {
       this.#write(char, false);
       return this.#carriageReturn();
     }
     // Satır başındaki ve ardışık boşluklar görünmez; tuşlanmadan eklenir.
-    if (space && (this.#pendingReturn || SPACE.test(this.#prev))) {
+    const collapsible = !pre && COLLAPSIBLE_CHAR.test(char);
+    if (collapsible && (this.#pendingReturn || COLLAPSIBLE_CHAR.test(this.#prev))) {
       this.#write(char, false);
       return;
     }
@@ -120,18 +153,23 @@ export class Typist {
       this.#pendingReturn = false;
       await this.#carriageReturn();
     }
-    if (LETTER.test(char) && Math.random() < this.#opts.typoRate) await this.#overstrike(char);
+    if (typos && !this.#fast && LETTER.test(char) && Math.random() < this.#opts.typoRate) await this.#overstrike(char);
 
     this.#write(char, true);
     this.#typedAny = true;
-    this.#sound.playKeyClick(space);
+    if (this.#fast) {
+      this.#prev = char;
+      return;
+    }
+    this.#sound.playKeyClick(SPACE.test(char));
+    this.#opts.onChar?.(char, this.sheet);
     const delay = this.#delay(char);
     this.#prev = char;
     if (this.#wrapped()) {
       await this.#carriageReturn();
       this.#prev = char;
     }
-    await this.#sleep(delay);
+    await this.#wait(delay);
   }
 
   #write(char: string, ink: boolean): void {
@@ -151,13 +189,14 @@ export class Typist {
     const typo = document.createElement('span');
     typo.className = 'daktilo-overstrike';
     typo.setAttribute('aria-hidden', 'true');
-    typo.textContent = neighborKey(char);
+    typo.textContent = neighborKey(char, this.#opts.keyboard);
     this.#place(typo);
     this.#sound.playKeyClick(false);
-    await this.#sleep(Math.max(150, this.#opts.speed * 2.5));
+    await this.#wait(Math.max(150, this.#opts.speed * 2.5));
     typo.dataset.strike = this.#opts.overstrikeChar;
+    if (this.#fast) return;
     this.#sound.playKeyClick(false);
-    await this.#sleep(this.#opts.speed * 1.8);
+    await this.#wait(this.#opts.speed * 1.8);
   }
 
   #markReturn(): void {
@@ -165,16 +204,19 @@ export class Typist {
   }
 
   async #carriageReturn(): Promise<void> {
-    this.#sound.playCarriageDing();
     this.#prev = '\n';
     this.#lineTop = NaN;
-    await this.#sleep(this.#opts.speed * 4);
+    if (this.#fast) return;
+    this.#sound.playCarriageDing();
+    this.#opts.onLine?.(this.sheet);
+    if (this.#opts.autoScroll) this.#cursor.scrollIntoView?.({ block: 'nearest' });
+    await this.#wait(this.#opts.speed * 4);
   }
 
-  /** İmleç bir alt satıra geçtiyse (metin sarıldıysa) true döner. */
+  /** İmleç bir alt satıra geçtiyse (metin sarıldıysa) true döner. Konum kağıda göre ölçülür; kaydırma etkilemez. */
   #wrapped(): boolean {
     const rect = this.#cursor.getBoundingClientRect();
-    const top = rect.top + window.scrollY;
+    const top = rect.top - this.sheet.getBoundingClientRect().top;
     const wrapped = top - this.#lineTop > Math.max(4, rect.height * 0.6);
     this.#lineTop = top;
     return wrapped;

@@ -24,7 +24,10 @@ describe('yazım animasyonu', () => {
     expect(el.getAttribute('aria-busy')).toBe('true');
     expect(el.querySelector('.daktilo-cursor')).not.toBeNull();
     await vi.advanceTimersByTimeAsync(200);
-    expect(el.textContent!.length).toBeLessThan('GeceMekanik tuşlar.'.length + 1);
+    const box = el.querySelector('[aria-hidden="true"]:not(.daktilo-cursor)')!;
+    expect(box.textContent!.length).toBeLessThan('GeceMekanik tuşlar.'.length);
+    // Yazım sürerken ekran okuyucular metnin tamamını gizli kopyadan okur.
+    expect(el.querySelector('.daktilo-sr')!.textContent).toBe('GeceMekanik tuşlar.');
 
     await typeOut(d);
     expect(el.innerHTML).toBe('<h1>Gece</h1><p>Mekanik <em>tuşlar</em>.</p>');

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { neighborKey } from '../src/keyboard';
+import { TURKISH_Q, neighborKey } from '../src/keyboard';
 import { resolveOptions } from '../src/options';
 
 describe('resolveOptions', () => {
@@ -13,11 +13,15 @@ describe('resolveOptions', () => {
       speed: 45,
       typoRate: 0.02,
       overstrikeChar: 'x',
+      keyboard: TURKISH_Q,
       sound: false,
       volume: 0.4,
       stamp: null,
       fonts: true,
+      styles: true,
       respectReducedMotion: true,
+      startOnVisible: false,
+      autoScroll: false,
     });
   });
 
@@ -39,16 +43,16 @@ describe('resolveOptions', () => {
 describe('neighborKey', () => {
   it('klavyede komşu bir tuş döndürür', () => {
     const neighbors = new Set<string>();
-    for (let i = 0; i < 6; i++) neighbors.add(neighborKey('g', () => i / 6));
+    for (let i = 0; i < 6; i++) neighbors.add(neighborKey('g', undefined, () => i / 6));
     expect([...neighbors].sort()).toEqual(['b', 'f', 'h', 't', 'v', 'y']);
   });
 
   it('büyük harfi korur ve Türkçe karakterleri tanır', () => {
-    expect(neighborKey('A', () => 0)).toMatch(/^[A-ZÇĞİIÖŞÜ]$/);
-    expect(['L', 'İ', 'Ğ', 'Ü', 'Ç', 'Ö']).toContain(neighborKey('Ş', () => 0.99).toLocaleUpperCase('tr'));
+    expect(neighborKey('A', undefined, () => 0)).toMatch(/^[A-ZÇĞİIÖŞÜ]$/);
+    expect(['L', 'İ', 'Ğ', 'Ü', 'Ç', 'Ö']).toContain(neighborKey('Ş', undefined, () => 0.99).toLocaleUpperCase('tr'));
   });
 
   it('klavyede olmayan karakter için yine bir harf döndürür', () => {
-    expect(neighborKey('é', () => 0)).toMatch(/^\p{L}$/u);
+    expect(neighborKey('é', undefined, () => 0)).toMatch(/^\p{L}$/u);
   });
 });
