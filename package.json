@@ -1,6 +1,6 @@
 {
   "name": "daktilo-js",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Zero-dependency typewriter paper aesthetic, organic ink wear & Web Audio mechanical sound engine.",
   "keywords": [
     "typewriter",
