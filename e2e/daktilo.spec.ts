@@ -1,15 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
 
-declare global {
-  interface Window {
-    calls: { key: number; ding: number; chars: number; lines: number };
-    countingSound: () => unknown;
-    start: (html: string, options?: Record<string, unknown>) => Promise<void>;
-    daktilo: { skip(): void; pause(): void; resume(): void };
-    DaktiloEditor: { DaktiloWriter: new (target: string, options?: Record<string, unknown>) => unknown };
-  }
-}
-
 const LONG = 'Mekanik tuşların kağıt üzerindeki izi dijital ekranın soğukluğunu kırar ve her harf biraz eğri kalır.';
 
 /** Paragrafın tarayıcıda kapladığı satır sayısı. */

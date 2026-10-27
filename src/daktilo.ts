@@ -31,8 +31,10 @@ export class Daktilo {
   readonly finished: Promise<void>;
   /** While `true`, key and carriage sounds are silenced. */
   muted = false;
-  #sound: SoundEngine;
+  #sound!: SoundEngine;
   #voice: SoundEngine;
+  #reduced: boolean;
+  #volume: number;
   #animate: boolean;
   #cleanups: Array<() => void> = [];
   #dead = new WeakSet<HTMLElement>();
@@ -45,21 +47,30 @@ export class Daktilo {
   constructor(target: DaktiloTarget, options: DaktiloOptions = {}) {
     const o = (this.options = resolveOptions(options));
     this.elements = canUseDOM() ? resolveTargets(target) : [];
-    const reduced = o.respectReducedMotion && prefersReducedMotion();
-    const { sound } = o;
-    const audible = !!sound && !reduced && this.elements.length > 0;
-    if (typeof sound === 'object' && !audible) sound.dispose();
-    const engine = (this.#sound =
-      audible && typeof sound === 'object' ? sound : new MechanicalSoundEngine(audible, o.volume));
+    this.#reduced = o.respectReducedMotion && prefersReducedMotion();
+    this.#volume = o.volume;
+    this.setSound(o.sound);
     this.#voice = {
-      playKeyClick: (isSpace) => this.muted || engine.playKeyClick(isSpace),
-      playCarriageDing: () => this.muted || engine.playCarriageDing(),
+      playKeyClick: (isSpace) => this.muted || this.#sound.playKeyClick(isSpace),
+      playCarriageDing: () => this.muted || this.#sound.playCarriageDing(),
       dispose() {},
     };
     if (this.elements.length) injectStyles(o.fonts, o.styles);
-    this.#animate = o.animate && !reduced;
+    this.#animate = o.animate && !this.#reduced;
     this.finished = Promise.all(this.elements.map((el) => this.#mount(el))).then(() => undefined);
-    void this.finished.then(() => this.#cleanups.length && o.onComplete?.());
+    // Yok edilen ya da başka bir örneğin devraldığı kağıtlar için çağrılmaz.
+    void this.finished.then(() => this.elements.some((el) => !this.#dead.has(el)) && o.onComplete?.());
+  }
+
+  /**
+   * Turns sound on or off, or switches to another `SoundEngine`, at any time. The previous engine is
+   * disposed. Sound stays off while `prefers-reduced-motion` is respected and set.
+   */
+  setSound(sound: boolean | SoundEngine): void {
+    this.#sound?.dispose();
+    const audible = !!sound && !this.#reduced && this.elements.length > 0;
+    if (typeof sound === 'object' && !audible) sound.dispose();
+    this.#sound = audible && typeof sound === 'object' ? sound : new MechanicalSoundEngine(audible, this.#volume);
   }
 
   /** Instantly completes the current and queued typing; typed letters keep their ink. */
@@ -85,6 +96,7 @@ export class Daktilo {
 
   /** Changes the volume (0.0 - 1.0). */
   setVolume(volume: number): void {
+    this.#volume = volume;
     this.#sound.setVolume?.(volume);
   }
 

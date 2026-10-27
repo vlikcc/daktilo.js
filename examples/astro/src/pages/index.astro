@@ -1,0 +1,21 @@
+---
+import DaktiloSheet from 'daktilo-js/astro';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>daktilo-js + Astro</title>
+  </head>
+  <body>
+    <DaktiloSheet id="static" paper="clean" inkWear={1} fonts={false} stamp={{ docNo: '#7', classification: 'DRAFT' }}>
+      <h1>Static paper</h1>
+      <p>Rendered with ink wear and a stamp, no animation.</p>
+    </DaktiloSheet>
+
+    <DaktiloSheet id="typed" as="section" animate speed={5} typoRate={0} inkWear={0} fonts={false}>
+      <p>Typed letter by letter.</p>
+    </DaktiloSheet>
+  </body>
+</html>

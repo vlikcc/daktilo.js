@@ -45,9 +45,11 @@ let fontsLoaded: Promise<unknown> | undefined;
  * değişimi satırları yeniden akıtır ve satır sonu algılaması yanlış çan çalar.
  */
 export function fontsReady(): Promise<unknown> {
-  return (fontsLoaded ??= new Promise((resolve) => {
+  const link = document.getElementById(FONTS_ID) as HTMLLinkElement | null;
+  // Yalnızca font bağlantısı varken önbelleğe alınır: sonradan `fonts: true` ile gelen örnek de bekler.
+  if (link && fontsLoaded) return fontsLoaded;
+  const ready = new Promise((resolve) => {
     const fonts = document.fonts;
-    const link = document.getElementById(FONTS_ID) as HTMLLinkElement | null;
     const load = (): unknown =>
       Promise.all(['Courier Prime', 'Special Elite'].map((family) => fonts.load(`1em '${family}'`))).then(
         resolve,
@@ -58,5 +60,7 @@ export function fontsReady(): Promise<unknown> {
     if (!link || link.sheet) return load();
     link.addEventListener('load', load);
     link.addEventListener('error', resolve);
-  }));
+  });
+  if (link) fontsLoaded = ready;
+  return ready;
 }

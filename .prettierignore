@@ -6,3 +6,7 @@ package-lock.json
 docs/*.pdf
 .changeset/*.md
 playground/index.html
+examples/*/dist
+examples/*/.astro
+examples/*/package-lock.json
+e2e/*-snapshots

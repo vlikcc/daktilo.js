@@ -40,6 +40,7 @@ export function useDaktilo<T extends HTMLElement = HTMLElement>(
   const latest = useRef(options);
   latest.current = options;
   const [daktilo, setDaktilo] = useState<Daktilo | null>(null);
+  const added = useRef<string[]>([]);
 
   useIsomorphicLayoutEffect(() => {
     if (!ref.current) return;
@@ -50,14 +51,25 @@ export function useDaktilo<T extends HTMLElement = HTMLElement>(
         (...args: never[]) => (latest.current[name] as (...a: never[]) => void)?.(...args),
       ]),
     );
-    const instance = new Daktilo(ref.current, {
+    const el = ref.current;
+    const before = new Set(el.classList);
+    const instance = new Daktilo(el, {
       ...rest,
       ...callbacks,
       sound: typeof sound === 'function' ? sound() : sound,
     });
+    added.current = [...el.classList].filter((name) => !before.has(name));
     setDaktilo(instance);
-    return () => instance.destroy();
+    return () => {
+      added.current = [];
+      instance.destroy();
+    };
   }, deps);
+
+  // React `className` değişince class özniteliğini baştan yazar; Daktilo'nun eklediği sınıflar geri konur.
+  useIsomorphicLayoutEffect(() => {
+    ref.current?.classList.add(...added.current);
+  });
 
   return { ref, daktilo };
 }

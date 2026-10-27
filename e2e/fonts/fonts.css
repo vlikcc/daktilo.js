@@ -1,0 +1,16 @@
+/* Görsel testler için yerel fontlar (yalnızca Latin alt kümesi). Lisanslar: README.md */
+@font-face {
+  font-family: 'Courier Prime';
+  font-weight: 400;
+  src: url(courier-prime-400.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Courier Prime';
+  font-weight: 700;
+  src: url(courier-prime-700.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Special Elite';
+  font-weight: 400;
+  src: url(special-elite-400.woff2) format('woff2');
+}

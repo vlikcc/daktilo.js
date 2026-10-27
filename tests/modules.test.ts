@@ -1,13 +1,9 @@
-import { act, createElement, StrictMode } from 'react';
-import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DaktiloWriter } from '../src/editor';
 import { AZERTY, QWERTY, QWERTZ, TURKISH_F, TURKISH_Q } from '../src/keyboards';
 import { neighborKey } from '../src/keyboard';
-import { DaktiloSheet, useDaktilo } from '../src/react';
 import daktiloTailwind, { cssToJs, toComponents } from '../src/tailwind';
 import { CSS } from '../src/styles';
-import type { Daktilo } from '../src';
 import { setReducedMotion } from './helpers';
 
 beforeEach(() => setReducedMotion(false));
@@ -129,74 +125,5 @@ describe('daktilo-js/tailwind', () => {
     daktiloTailwind.handler({ addComponents });
     expect(addComponents).toHaveBeenCalledWith(expect.objectContaining({ '.daktilo-sheet': expect.any(Object) }));
     expect(daktiloTailwind.config.theme.extend.colors.daktilo.ribbon).toBe('var(--daktilo-ribbon)');
-  });
-});
-
-describe('daktilo-js/react', () => {
-  let container: HTMLElement;
-  let root: Root;
-  beforeEach(() => {
-    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    document.body.innerHTML = '<div id="root"></div>';
-    container = document.getElementById('root')!;
-    root = createRoot(container);
-  });
-  afterEach(() => act(() => root.unmount()));
-
-  it('DaktiloSheet içeriği kağıda çevirir; unmount sonrası iz bırakmaz', async () => {
-    let instance: Daktilo | null = null;
-    await act(async () =>
-      root.render(
-        createElement(
-          StrictMode,
-          null,
-          createElement(
-            DaktiloSheet,
-            { paper: 'clean', inkWear: 1, className: 'yazi', onReady: (d: Daktilo) => (instance = d) },
-            createElement('p', null, 'Merhaba'),
-          ),
-        ),
-      ),
-    );
-    const sheet = container.querySelector('article')!;
-    expect(sheet.classList).toContain('yazi');
-    expect(sheet.classList).toContain('daktilo-theme-clean');
-    expect(sheet.querySelectorAll('.daktilo-ink').length).toBeGreaterThan(0);
-    expect(instance).not.toBeNull();
-  });
-
-  it('resetKey değişince kağıdı yeni içerikle yeniden oluşturur', async () => {
-    const render = (key: number, text: string) =>
-      act(async () =>
-        root.render(createElement(DaktiloSheet, { resetKey: key, inkWear: 0 }, createElement('p', null, text))),
-      );
-    await render(1, 'Bir');
-    await render(1, 'Yok sayılır');
-    expect(container.textContent).toBe('Bir');
-    await render(2, 'İki');
-    expect(container.textContent).toBe('İki');
-    expect(container.querySelector('article')!.classList).toContain('daktilo-sheet');
-  });
-
-  it('useDaktilo en güncel callback’i çağırır ve sound fabrikası her başlatmada yeni motor üretir', async () => {
-    vi.useFakeTimers();
-    const factory = vi.fn(fakeSound);
-    const calls: string[] = [];
-    function Paper({ label }: { label: string }) {
-      const { ref } = useDaktilo<HTMLDivElement>({
-        animate: true,
-        typoRate: 0,
-        inkWear: 0,
-        sound: factory,
-        onComplete: () => calls.push(label),
-      });
-      return createElement('div', { ref }, createElement('p', null, 'ab'));
-    }
-    await act(async () => root.render(createElement(StrictMode, null, createElement(Paper, { label: 'ilk' }))));
-    await act(async () => root.render(createElement(StrictMode, null, createElement(Paper, { label: 'son' }))));
-    await act(async () => vi.runAllTimersAsync());
-    vi.useRealTimers();
-    expect(factory.mock.calls.length).toBe(2);
-    expect(calls).toEqual(['son']);
   });
 });

@@ -21,7 +21,17 @@ test('playground hatasız yüklenir; düzen, duraklatma ve type() çalışır', 
   await page.click('#skip');
   await page.fill('#append-text', 'Son satır.');
   await page.click('#append button');
-  await expect(page.locator('#sheet p').last()).toHaveText('Son satır.', { timeout: 10_000 });
+  // Playground yazım hatası yapar (typoRate): üzerine x basılan harfler görünen metne dahil değildir.
+  const lastParagraph = () =>
+    page
+      .locator('#sheet p')
+      .last()
+      .evaluate((p) => {
+        const clone = p.cloneNode(true) as Element;
+        clone.querySelectorAll('.daktilo-overstrike').forEach((typo) => typo.remove());
+        return clone.textContent;
+      });
+  await expect.poll(lastParagraph, { timeout: 10_000 }).toBe('Son satır.');
 
   await expect(page.locator('#writer')).toHaveClass(/daktilo-writer/);
   expect(errors).toEqual([]);

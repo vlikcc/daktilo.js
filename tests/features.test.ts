@@ -291,3 +291,50 @@ describe('stiller ve fontlar', () => {
     expect(document.getElementById('daktilo-core-css')).toBeNull();
   });
 });
+
+describe('küçük kusur düzeltmeleri', () => {
+  it('aynı elemanı başka bir örnek devralırsa eski örnek onComplete çağırmaz', async () => {
+    const onComplete = vi.fn();
+    const el = mount('<p>abc</p>');
+    const first = new Daktilo(el, { animate: true, onComplete });
+    new Daktilo(el, { inkWear: 0 });
+    await typeOut(first);
+    expect(onComplete).not.toHaveBeenCalled();
+  });
+
+  it('setSound() sesi sonradan açar, motor değiştirir ve eskisini kapatır', async () => {
+    const first = fakeSound();
+    const second = fakeSound();
+    const d = new Daktilo(mount('<p>ab</p>'), { animate: true, typoRate: 0, inkWear: 0 });
+    d.setSound(first as SoundEngine);
+    await vi.advanceTimersByTimeAsync(5);
+    expect(first.playKeyClick).toHaveBeenCalled();
+    d.setSound(second as SoundEngine);
+    expect(first.dispose).toHaveBeenCalled();
+    await typeOut(d);
+    expect(second.playKeyClick).toHaveBeenCalled();
+    d.setSound(false);
+    expect(second.dispose).toHaveBeenCalled();
+  });
+
+  it('fonts:false ile başlayan örnek, sonraki fonts:true örneğinin font beklemesini atlatmaz', async () => {
+    vi.resetModules();
+    const { Daktilo: Fresh } = await import('../src');
+    document.head.innerHTML = '';
+    document.body.innerHTML = '<article id="a"><p>a</p></article><article id="b"><p>bcd</p></article>';
+    Object.defineProperty(document, 'fonts', { value: { load: vi.fn(async () => []) }, configurable: true });
+    try {
+      new Fresh('#a', { animate: true, fonts: false, inkWear: 0 });
+      const b = new Fresh('#b', { animate: true, fonts: true, inkWear: 0, typoRate: 0 });
+      await vi.advanceTimersByTimeAsync(500);
+      // Font bağlantısı yüklenmeden yazım başlamaz: paragraf henüz kağıda yerleşmemiştir.
+      expect(document.querySelector('#b p')).toBeNull();
+      expect(document.querySelector('#b .daktilo-cursor')).not.toBeNull();
+      document.getElementById('daktilo-fonts')!.dispatchEvent(new Event('load'));
+      await typeOut(b as unknown as Daktilo);
+      expect(document.querySelector('#b p')!.textContent).toBe('bcd');
+    } finally {
+      delete (document as { fonts?: unknown }).fonts;
+    }
+  });
+});

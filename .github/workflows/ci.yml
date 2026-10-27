@@ -43,7 +43,7 @@ jobs:
           retention-days: 7
 
   e2e:
-    name: E2E (Chromium)
+    name: E2E (Chromium, Firefox, WebKit)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -52,7 +52,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium firefox webkit
       - run: npm run build
       - run: npm run test:e2e
       - name: Upload Playwright report
@@ -62,3 +62,38 @@ jobs:
           name: playwright-report
           path: playwright-report
           retention-days: 7
+
+  react18:
+    name: React 18 compatibility
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # The repo develops against React 19; the wrapper supports React >= 18.
+      - run: npm install --no-save react@18 react-dom@18
+      - run: npx vitest run tests/react.test.ts
+
+  astro:
+    name: Astro example
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run build
+      - run: npm pack --pack-destination examples/astro
+      - name: Build the example with the packed tarball
+        working-directory: examples/astro
+        run: |
+          npm ci
+          npm install --no-save ./daktilo-js-*.tgz
+          npm run build
+      - run: node scripts/check-astro.mjs
