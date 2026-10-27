@@ -1,9 +1,10 @@
 import { expect, test, type Page } from '@playwright/test';
 
-// Ekran görüntüleri tarayıcıya ve işletim sistemine göre farklılaştığından görsel testler yalnızca
-// Chromium'da çalışır. Fontlar e2e/fonts altından yüklenir ve Math.random tohumlanır; böylece mürekkep
-// kusurları da her çalıştırmada aynıdır. Referansları güncellemek için: npx playwright test --update-snapshots
+// Ekran görüntüleri tarayıcıya ve sistemin metin kenar yumuşatmasına göre farklılaşır. Referanslar CI'daki
+// Playwright container imajında üretilir ("Update visual snapshots" iş akışı) ve yalnızca orada (VISUAL=1)
+// karşılaştırılır. Fontlar e2e/fonts altından yüklenir ve Math.random tohumlanır; mürekkep kusurları da sabittir.
 test.skip(({ browserName }) => browserName !== 'chromium', 'görsel referanslar yalnızca Chromium için');
+test.skip(!process.env.VISUAL, 'görsel testler CI container’ında çalışır (VISUAL=1)');
 
 const TEXT = `<h1>Night Notes</h1>
 <p>The mark of mechanical keys on paper breaks the coldness of the digital screen. Every letter is a
