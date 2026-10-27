@@ -1,0 +1,26 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "name": "daktilo-js",
+  "entryPoints": [
+    "src/index.ts",
+    "src/element.ts",
+    "src/editor.ts",
+    "src/samples.ts",
+    "src/keyboards.ts",
+    "src/textures.ts",
+    "src/react.ts",
+    "src/vue.ts",
+    "src/svelte.ts",
+    "src/tailwind.ts"
+  ],
+  "out": "api",
+  "readme": "none",
+  "excludePrivate": true,
+  "excludeInternal": true,
+  "includeVersion": true,
+  "navigationLinks": {
+    "Playground": "https://vlikcc.github.io/daktilo.js/playground/",
+    "GitHub": "https://github.com/vlikcc/daktilo.js"
+  },
+  "validation": { "notExported": true, "invalidLink": true, "notDocumented": false }
+}

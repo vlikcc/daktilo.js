@@ -49,7 +49,8 @@ export function toComponents(css: string): CssInJs {
   return components;
 }
 
-interface PluginAPI {
+/** The part of Tailwind's plugin API the plugin uses. */
+export interface PluginAPI {
   addComponents(components: CssInJs): void;
 }
 

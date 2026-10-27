@@ -1,15 +1,15 @@
 # daktilo-js
 
-Bu dosya [Changesets](https://github.com/changesets/changesets) tarafından güncellenir: yayımlanmamış değişiklikler `.changeset/` altındadır ve `changeset version` ile buraya eklenir.
+This file is maintained by [Changesets](https://github.com/changesets/changesets): unreleased changes live in `.changeset/` and are added here by the Release workflow.
 
 ## 1.0.0
 
 ### Major Changes
 
-- İlk sürüm (MVP): üç kağıt teması (`vintage`, `clean`, `carbon`), organik mürekkep simülasyonu, overstrike yazım motoru, Web Audio ile dosyasız mekanik ses, evrak damgası, `skip()` / `destroy()`, SSR güvenliği ve `prefers-reduced-motion` desteği.
-- İsteğe bağlı `daktilo-js/samples` modülü: gerçek daktilo kayıtlarını çalan `SampleSoundEngine`.
+- First release (MVP): three paper themes (`vintage`, `clean`, `carbon`), organic ink simulation, the overstrike typing engine, file-free mechanical sound with Web Audio, the document stamp, `skip()` / `destroy()`, SSR safety and `prefers-reduced-motion` support.
+- Optional `daktilo-js/samples` module: `SampleSoundEngine` plays real typewriter recordings.
 
 ### Patch Changes
 
-- Kayıtlı tuş vuruşları tam seviyede çalınır; kesimde tıkırtı olmasın diye yalnızca son 15 ms kısılır.
-- Playground: hız ayarı saniyedeki harf sayısıyla gösterilir.
+- Recorded keystrokes play at full level; only the last 15 ms are faded to avoid clicks.
+- Playground: the speed slider is shown in characters per second.

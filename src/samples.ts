@@ -14,7 +14,8 @@ export interface SoundSamples {
   volume?: number;
 }
 
-type Hit = [offset: number, duration: number];
+/** A detected key strike in a recording: start offset and duration, in seconds. */
+export type Hit = [offset: number, duration: number];
 
 /** Finds key strikes in a recording: sudden rises above a threshold in a 2 ms energy envelope. */
 export function detectHits(data: Float32Array, rate: number): Hit[] {

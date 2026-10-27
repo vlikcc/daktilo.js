@@ -86,6 +86,7 @@
       button.ghost { background: transparent; color: var(--ink); }
       .install button { padding: 0.2rem 0.6rem; background: var(--accent); border-color: var(--accent); }
       .actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+      .docs-link { margin-left: auto; color: var(--accent); }
       .stage { min-width: 0; }
       .stage-bar { display: flex; justify-content: flex-end; gap: 0.5rem; margin-bottom: 0.5rem; }
       #sheet { margin-top: 0; }
@@ -124,6 +125,7 @@
         <h1>Daktilo Playground</h1>
         <p>Kağıt, mürekkep ve mekanik ses — sıfır bağımlılık, &lt; 6 KB.</p>
       </div>
+      <a class="docs-link" href="../api/">API reference</a>
       <span class="install"><code>npm i daktilo-js</code><button type="button" data-copy="npm i daktilo-js">Kopyala</button></span>
     </header>
 
@@ -136,6 +138,7 @@
               <option value="vintage">vintage — saman kağıdı</option>
               <option value="clean">clean — modern beyaz</option>
               <option value="carbon">carbon — karbon (koyu)</option>
+              <option value="auto">auto — sistem temasına göre</option>
             </select>
           </label>
           <div class="grid2">
@@ -223,6 +226,16 @@
         </fieldset>
 
         <fieldset>
+          <legend>Doku</legend>
+          <div class="grid2">
+            <label class="inline"><input type="checkbox" name="texture" value="stain" /> Kahve lekesi</label>
+            <label class="inline"><input type="checkbox" name="texture" value="fold" /> Katlanma izi</label>
+            <label class="inline"><input type="checkbox" name="texture" value="holes" /> Delikli kenar</label>
+            <label class="inline"><input type="checkbox" name="texture" value="aged" /> Eskimiş kenar</label>
+          </div>
+        </fieldset>
+
+        <fieldset>
           <legend>Metin</legend>
           <label>Kendi metnini yaz (boş satır = yeni paragraf)
             <textarea name="text">Gece Notları
@@ -239,6 +252,7 @@ Yanlış bir tuşa bastığında geri dönüp silemezsin. Üzerine bir x basar, 
           <button type="button" class="ghost" id="pause" aria-pressed="false">Duraklat</button>
           <button type="button" class="ghost" id="mute" aria-pressed="false">Sessiz</button>
           <button type="button" class="ghost" id="skip">Atla</button>
+          <button type="button" class="ghost" id="share">Bağlantıyı kopyala</button>
           <button type="button" id="replay">Yeniden yaz</button>
         </div>
         <article id="sheet"></article>
@@ -266,6 +280,7 @@ Yanlış bir tuşa bastığında geri dönüp silemezsin. Üzerine bir x basar, 
     <script src="../dist/samples.global.js"></script>
     <script src="../dist/keyboards.global.js"></script>
     <script src="../dist/editor.global.js"></script>
+    <script src="../dist/textures.global.js"></script>
     <script>
       const SAMPLES = { key: 'sounds/typewriter-keys.mp3', bell: 'sounds/typewriter-bell.mp3' };
       const ENGINE_PLACEHOLDER = '__engine__';
@@ -275,7 +290,8 @@ Yanlış bir tuşa bastığında geri dönüp silemezsin. Üzerine bir x basar, 
         paper: 'vintage', maxWidth: '65ch', inkWear: 0.35, animate: false, speed: 45,
         typoRate: 0.02, overstrikeChar: 'x', autoScroll: false, sound: false, volume: 0.4,
       };
-      const THEME_RIBBONS = { vintage: '#c84b31', clean: '#1d4ed8', carbon: '#f59e0b' };
+      const THEME_RIBBONS = { vintage: '#c84b31', clean: '#1d4ed8', carbon: '#f59e0b', auto: '#c84b31' };
+      const selectedTextures = () => [...form.querySelectorAll('[name="texture"]:checked')].map((input) => input.value);
 
       const form = document.getElementById('controls');
       const sheet = document.getElementById('sheet');
@@ -335,7 +351,11 @@ Yanlış bir tuşa bastığında geri dönüp silemezsin. Üzerine bir x basar, 
         const engine = sample
           ? `const sound = new DaktiloSamples.SampleSoundEngine({\n  key: '${SAMPLES.key}',\n  bell: '${SAMPLES.bell}',\n  volume: ${options.volume},\n});\n\n`
           : '';
-        codeEl.textContent = `${engine}new Daktilo.Daktilo('#yazi', ${body});`;
+        const textures = selectedTextures();
+        const texture = textures.length
+          ? `\n\nDaktiloTextures.applyTextures(document.querySelector('#yazi'), ${JSON.stringify(textures).replace(/"/g, "'")});`
+          : '';
+        codeEl.textContent = `${engine}new Daktilo.Daktilo('#yazi', ${body});${texture}`;
       }
 
       function syncOutputs() {
@@ -357,9 +377,41 @@ Yanlış bir tuşa bastığında geri dönüp silemezsin. Üzerine bir x basar, 
         const keyboard = DaktiloKeyboards[form.elements.keyboard.value];
         instance = new Daktilo.Daktilo(sheet, { ...options, keyboard, sound });
         instance.muted = muteButton.getAttribute('aria-pressed') === 'true';
+        const textures = selectedTextures();
+        if (textures.length) DaktiloTextures.applyTextures(sheet, textures);
+        // Ayarlar adres çubuğunda tutulur: bağlantı aynı yapılandırmayı açar.
+        history.replaceState(null, '', `#${serialize()}`);
         setPressed(pauseButton, false);
         pauseButton.textContent = 'Duraklat';
         renderCode(options);
+      }
+
+      /** Formun tüm alanlarını URL parametrelerine çevirir (işaretsiz kutular yazılmaz). */
+      function serialize() {
+        const params = new URLSearchParams();
+        for (const field of form.elements) {
+          if (!field.name) continue;
+          if (field.type === 'checkbox') {
+            if (field.checked) params.append(field.name, field.value === 'on' ? '1' : field.value);
+          } else {
+            params.set(field.name, field.value);
+          }
+        }
+        return params.toString();
+      }
+
+      function restore(query) {
+        const params = new URLSearchParams(query);
+        if (!params.has('paper')) return;
+        for (const field of form.elements) {
+          if (!field.name) continue;
+          if (field.type === 'checkbox') {
+            field.checked =
+              field.value === 'on' ? params.get(field.name) === '1' : params.getAll(field.name).includes(field.value);
+          } else if (params.has(field.name)) {
+            field.value = params.get(field.name);
+          }
+        }
       }
 
       const pauseButton = document.getElementById('pause');
@@ -408,7 +460,9 @@ Yanlış bir tuşa bastığında geri dönüp silemezsin. Üzerine bir x basar, 
       document.getElementById('copy-code').addEventListener('click', (event) =>
         copy(codeEl.textContent, event.currentTarget),
       );
+      document.getElementById('share').addEventListener('click', (event) => copy(location.href, event.currentTarget));
 
+      restore(location.hash.slice(1));
       syncOutputs();
       apply();
     </script>

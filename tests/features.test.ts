@@ -184,6 +184,8 @@ describe('olaylar', () => {
 
 describe('type()', () => {
   it('önceki yazım bittikten sonra yeni paragrafı yazar', async () => {
+    // Gecikme rastgeledir; sabitlenmezse "Bir" nadiren 80 ms'den kısa sürer.
+    vi.spyOn(Math, 'random').mockReturnValue(0.5);
     const el = mount('<p>Bir</p>');
     const d = new Daktilo(el, { animate: true, typoRate: 0, inkWear: 0 });
     const next = d.type('İki');

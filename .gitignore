@@ -7,3 +7,4 @@ playwright-report
 test-results
 .astro
 *.tgz
+api

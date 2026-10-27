@@ -25,11 +25,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+      - run: npm run docs
       - name: Assemble site
         # Playground ../dist/ yolunu kullanır; site kökü playground'a yönlendirir.
         run: |
           mkdir -p _site
-          cp -r playground dist _site/
+          cp -r playground dist api _site/
           cat > _site/index.html <<'HTML'
           <!doctype html>
           <meta charset="utf-8" />

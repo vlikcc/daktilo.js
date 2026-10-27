@@ -10,3 +10,4 @@ examples/*/dist
 examples/*/.astro
 examples/*/package-lock.json
 e2e/*-snapshots
+api
