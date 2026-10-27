@@ -25,6 +25,7 @@ npm run lint && npm run format:check && npm run typecheck && npm test && npm run
 - **Public API docs in English.** JSDoc on exported types, options and methods ends up in the `.d.ts` files and the API reference, so write it in English. Internal comments and test descriptions are in Turkish; follow the surrounding code.
 - **Tests.** Every bug fix comes with a test that fails without the fix. Behaviour that depends on real layout (line wraps, scrolling, fonts) needs an e2e test in `e2e/`.
 - **Visual snapshots.** Screenshot baselines are generated and compared only in CI's Playwright container (`VISUAL=1`), because text anti-aliasing differs between machines. After an intentional visual change, run **Actions → Update visual snapshots**; it commits the new baselines to `main`.
+- **Dependency updates** are done by hand. `@playwright/test` is pinned: bump it together with the CI container image (`mcr.microsoft.com/playwright:v<version>-noble` in `ci.yml` and `update-snapshots.yml`), then regenerate the visual snapshots.
 - **Accessibility.** Typed text must stay readable by screen readers, and `prefers-reduced-motion` must be respected.
 - **Formatting** is Prettier's job (`npm run format`).
 
