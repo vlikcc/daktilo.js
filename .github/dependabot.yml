@@ -19,7 +19,8 @@ updates:
         dependency-type: development
         update-types: [minor, patch]
     ignore:
-      # Pinned to the Chromium build preinstalled in the dev container; bump deliberately.
+      # Pinned to the Chromium build preinstalled in the dev container and to the CI container image
+      # (mcr.microsoft.com/playwright:v<version>-noble in ci.yml); bump all three together.
       - dependency-name: '@playwright/test'
       # vitest 3 needs a matching @vitest/coverage-v8 and config review.
       - dependency-name: 'vitest'
