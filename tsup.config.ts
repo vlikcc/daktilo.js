@@ -29,6 +29,19 @@ export default defineConfig([
   { ...shared, entry: { samples: 'src/samples.ts' }, globalName: 'DaktiloSamples' },
   { ...shared, entry: { keyboards: 'src/keyboards.ts' }, globalName: 'DaktiloKeyboards' },
   { ...shared, entry: { editor: 'src/editor.ts' }, globalName: 'DaktiloEditor' },
+  // Web Component: ESM/CJS çekirdeği paket adıyla içe aktarır (tek kopya); CDN dosyası çekirdeği içerir.
+  { ...shared, format: ['cjs', 'esm'], entry: { element: 'src/element.ts' }, external: ['daktilo-js'] },
+  {
+    ...shared,
+    format: ['iife'],
+    dts: false,
+    entry: { element: 'src/element.ts' },
+    globalName: 'DaktiloElement',
+    esbuildOptions(options) {
+      options.charset = 'utf8';
+      options.alias = { 'daktilo-js': './src/index.ts' };
+    },
+  },
   // React sarmalayıcısı çekirdeği paket adıyla içe aktarır; uygulamada tek bir Daktilo kopyası bulunur.
   { ...shared, format: ['cjs', 'esm'], entry: { react: 'src/react.ts' }, external: ['react', 'daktilo-js'] },
   {

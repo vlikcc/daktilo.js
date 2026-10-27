@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>daktilo-js Web Component</title>
+    <!-- CMS'lerde olduğu gibi betik <head> içinde: eleman, çocukları ayrıştırılmadan bağlanır. -->
+    <script src="../dist/element.global.js"></script>
+    <script>
+      window.events = [];
+      window.typed = '';
+      document.addEventListener('daktilo-complete', (e) => window.events.push(e.target.id));
+      document.addEventListener('daktilo-char', (e) => (window.typed += e.detail.char));
+    </script>
+  </head>
+  <body>
+    <daktilo-sheet id="static" paper="carbon" ink-wear="1" fonts="false" stamp-doc-no="#9" stamp-classification="DRAFT">
+      <h1>Static</h1>
+      <p>Ink wear and a stamp.</p>
+    </daktilo-sheet>
+    <daktilo-sheet id="typed" animate speed="5" typo-rate="0" ink-wear="0" fonts="false" keyboard="qwerty">
+      <p>Typed by a custom element.</p>
+      <!-- Ayrıştırıcı bu betikte durur: eleman, ikinci paragraf ayrıştırılmadan bağlanmış olur. -->
+      <script>
+        void 0;
+      </script>
+      <p>Second paragraph.</p>
+    </daktilo-sheet>
+  </body>
+</html>

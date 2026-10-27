@@ -30,7 +30,8 @@ async function render(page: Page, options: Record<string, unknown>): Promise<voi
       sheet.id = 'visual';
       sheet.innerHTML = html;
       document.body.append(sheet);
-      new window.Daktilo.Daktilo(sheet, { fonts: 'fonts/fonts.css', maxWidth: '60ch', ...opts });
+      // Genişlik px: `ch` birimi font yüklenmeden önce yedek fonttan hesaplanabiliyor (CI'da 576 yerine 600 px).
+      new window.Daktilo.Daktilo(sheet, { fonts: 'fonts/fonts.css', maxWidth: '576px', ...opts });
     },
     { html: TEXT, opts: options },
   );

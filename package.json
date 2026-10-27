@@ -71,6 +71,16 @@
         "default": "./dist/editor.cjs"
       }
     },
+    "./element": {
+      "import": {
+        "types": "./dist/element.d.mts",
+        "default": "./dist/element.mjs"
+      },
+      "require": {
+        "types": "./dist/element.d.ts",
+        "default": "./dist/element.cjs"
+      }
+    },
     "./react": {
       "import": {
         "types": "./dist/react.d.mts",
@@ -99,7 +109,9 @@
     "dist",
     "astro"
   ],
-  "sideEffects": false,
+  "sideEffects": [
+    "./dist/element.*"
+  ],
   "scripts": {
     "build": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\" && tsup",
     "dev": "tsup --watch",

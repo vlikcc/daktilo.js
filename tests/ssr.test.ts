@@ -19,3 +19,10 @@ describe('SSR (DOM olmayan ortam)', () => {
     }).not.toThrow();
   });
 });
+
+describe('SSR: Web Component modülü', () => {
+  it('DOM yokken içe aktarılabilir ve eleman kaydetmeye çalışmaz', async () => {
+    const element = await import('../src/element');
+    expect(() => element.defineDaktiloElement()).not.toThrow();
+  });
+});

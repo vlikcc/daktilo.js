@@ -14,6 +14,8 @@ const optional = [
   'dist/samples.mjs',
   'dist/keyboards.mjs',
   'dist/editor.mjs',
+  'dist/element.mjs',
+  'dist/element.global.js',
   'dist/react.mjs',
   'dist/tailwind.mjs',
   'dist/daktilo.css',
