@@ -14,7 +14,7 @@ function resolveTargets(target: DaktiloTarget): HTMLElement[] {
   const list =
     typeof target === 'string' ? document.querySelectorAll(target) : target instanceof Element ? [target] : target;
   const elements = Array.from(list ?? []).filter((el): el is HTMLElement => el instanceof HTMLElement);
-  if (typeof target === 'string' && !elements.length) console.warn(`daktilo-js: "${target}" bulunamadı`);
+  if (typeof target === 'string' && !elements.length) console.warn(`daktilo-js: no element matches "${target}"`);
   return elements;
 }
 
@@ -27,9 +27,9 @@ const div = (className?: string): HTMLDivElement => {
 export class Daktilo {
   readonly elements: HTMLElement[];
   readonly options: ResolvedOptions;
-  /** İlk yazım animasyonları bittiğinde (veya atlandığında / iptal edildiğinde) çözülür. */
+  /** Resolves when the initial typing finishes (or is skipped / destroyed). */
   readonly finished: Promise<void>;
-  /** `true` iken tuş ve çan sesleri çalınmaz. */
+  /** While `true`, key and carriage sounds are silenced. */
   muted = false;
   #sound: SoundEngine;
   #voice: SoundEngine;
@@ -62,13 +62,13 @@ export class Daktilo {
     void this.finished.then(() => this.#cleanups.length && o.onComplete?.());
   }
 
-  /** Devam eden ve sırada bekleyen yazımları anında tamamlar. */
+  /** Instantly completes the current and queued typing; typed letters keep their ink. */
   skip(): void {
     this.#skipUntil = this.#jobs;
     this.#typists.forEach((typist) => typist.finish());
   }
 
-  /** Yazımı duraklatır; `resume()` ile kaldığı yerden sürer. */
+  /** Pauses typing; `resume()` continues where it stopped. */
   pause(): void {
     this.#paused = true;
     this.#typists.forEach((typist) => typist.pause());
@@ -83,14 +83,14 @@ export class Daktilo {
     return this.#paused;
   }
 
-  /** Ses seviyesini (0.0 - 1.0) değiştirir. */
+  /** Changes the volume (0.0 - 1.0). */
   setVolume(volume: number): void {
     this.#sound.setVolume?.(volume);
   }
 
   /**
-   * Kağıda yeni içerik ekler ve (animate açıksa) önceki yazımlar bittikten sonra yazar.
-   * Metin yeni bir paragraf olarak eklenir; özel yapı için bir düğüm verin.
+   * Appends content to the paper and, with `animate`, types it after earlier typing finishes.
+   * A string becomes a new paragraph; pass a node for custom markup.
    */
   type(content: string | Node): Promise<void> {
     return Promise.all(
@@ -105,7 +105,7 @@ export class Daktilo {
     ).then(() => undefined);
   }
 
-  /** Elemanları başlatma öncesi hâline (orijinal düğümler, sınıflar ve stiller) döndürür. */
+  /** Restores the elements to their original nodes, classes and styles. */
   destroy(): void {
     this.#cleanups.splice(0).forEach((cleanup) => cleanup());
     this.#sound.dispose();

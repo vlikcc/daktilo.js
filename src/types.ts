@@ -1,11 +1,11 @@
 export type PaperPreset = 'vintage' | 'clean' | 'carbon';
 
 export interface StampLabels {
-  /** Varsayılan: 'KAYIT' */
+  /** Default: 'KAYIT' */
   docNo?: string;
-  /** Varsayılan: 'TARİH' */
+  /** Default: 'TARİH' */
   date?: string;
-  /** Varsayılan: 'YAZAN' */
+  /** Default: 'YAZAN' */
   author?: string;
 }
 
@@ -13,15 +13,15 @@ export interface StampMetadata {
   docNo?: string;
   date?: string;
   author?: string;
-  /** Örn: "TASLAK", "ARŞİV", "GİZLİ" */
+  /** Rotated stamp text, e.g. "DRAFT", "ARCHIVE", "CONFIDENTIAL". */
   classification?: string;
-  /** Alan etiketleri, ör. `{ docNo: 'REF', date: 'DATE', author: 'BY' }`. Varsayılan: Türkçe etiketler */
+  /** Field labels, e.g. `{ docNo: 'REF', date: 'DATE', author: 'BY' }`. Default: Turkish labels */
   labels?: StampLabels;
-  /** `date` verilmezse bugünün tarihini biçimlendiren yerel ayar. Varsayılan: 'tr-TR' */
+  /** Locale used to format today's date when `date` is not given. Default: 'tr-TR' */
   locale?: string;
 }
 
-/** Yazım motorunun çaldığı sesler. Örnek sahiplenilir: `destroy()` onu da kapatır. */
+/** Sounds played by the typing engine. The instance owns it: `destroy()` disposes it too. */
 export interface SoundEngine {
   playKeyClick(isSpace?: boolean): void;
   playCarriageDing(): void;
@@ -30,58 +30,58 @@ export interface SoundEngine {
 }
 
 export interface DaktiloOptions {
-  /** Varsayılan: 'vintage' */
+  /** Default: 'vintage' */
   paper?: PaperPreset;
-  /** Şerit/vurgu rengi. Varsayılan: kağıt temasının şerit rengi (vintage için '#c84b31'). */
+  /** Ribbon/accent colour. Default: the paper theme's ribbon colour ('#c84b31' for vintage). */
   ribbonColor?: string;
-  /** Varsayılan: '65ch' */
+  /** Paper width. Default: '65ch' */
   maxWidth?: string;
-  /** 0 (kapalı) ile 1 (yoğun eskime) arası. Varsayılan: 0.35 */
+  /** Ink wear from 0 (off) to 1 (heavy). Default: 0.35 */
   inkWear?: number;
-  /** Harf harf yazım animasyonu. Varsayılan: false */
+  /** Letter-by-letter typing animation. Default: false */
   animate?: boolean;
-  /** Ortalama yazım hızı (ms). Varsayılan: 45 */
+  /** Average delay per letter in ms. Default: 45 */
   speed?: number;
-  /** Gerçekçi daktilo hatası oranı (0 - 0.2). Varsayılan: 0.02 */
+  /** Overstrike mistake rate (0 - 0.2). Never applied inside code, kbd, samp or pre. Default: 0.02 */
   typoRate?: number;
-  /** Hata üzerine basılacak karakter. Varsayılan: 'x' */
+  /** Character struck over a mistake. Default: 'x' */
   overstrikeChar?: 'x' | '-';
   /**
-   * Hatalı tuşun seçildiği klavye satırları (küçük harf). Hazır düzenler `daktilo-js/keyboards` içindedir.
-   * Varsayılan: Türkçe Q
+   * Lowercase letter rows used to pick the neighbouring "wrong" key. Presets live in
+   * `daktilo-js/keyboards`. Default: Turkish Q
    */
   keyboard?: readonly string[];
   /**
-   * `true`: Web Audio ile dosyasız sentezlenen mekanik sesler.
-   * Bir `SoundEngine` (ör. `daktilo-js/samples` içindeki `SampleSoundEngine`) verilirse o kullanılır.
-   * Varsayılan: false
+   * `true`: file-free mechanical sounds synthesized with Web Audio.
+   * Pass a `SoundEngine` (e.g. `SampleSoundEngine` from `daktilo-js/samples`) to use it instead.
+   * Default: false
    */
   sound?: boolean | SoundEngine;
-  /** Sentez ses seviyesi (0.0 - 1.0). Varsayılan: 0.4 */
+  /** Synth volume (0.0 - 1.0). Default: 0.4 */
   volume?: number;
-  /** Üst evrak damgası. Varsayılan: null */
+  /** Document header with record number, date, author and a rotated stamp. Default: null */
   stamp?: StampMetadata | null;
   /**
-   * `true`: Special Elite ve Courier Prime fontlarını Google Fonts'tan yükler.
-   * Bir URL verilirse fontlar o stil dosyasından (ör. kendi sunucunuzdan) yüklenir. Varsayılan: true
+   * `true`: loads Special Elite and Courier Prime from Google Fonts.
+   * A URL loads them from that stylesheet instead (e.g. self-hosted). Default: true
    */
   fonts?: boolean | string;
   /**
-   * Çekirdek CSS'i bir `<style>` etiketiyle belgeye ekler. Katı CSP kullanan sayfalarda `false` verip
-   * `daktilo-js/style.css` dosyasını kendiniz yükleyin. Varsayılan: true
+   * Injects the core CSS in a `<style>` tag. With a strict CSP, pass `false` and load
+   * `daktilo-js/style.css` yourself. Default: true
    */
   styles?: boolean;
-  /** prefers-reduced-motion: reduce aktifken animasyon ve sesi kapatır. Varsayılan: true */
+  /** Disables animation and sound when `prefers-reduced-motion: reduce` is set. Default: true */
   respectReducedMotion?: boolean;
-  /** Yazım, kağıt ekranda görünür olduğunda başlar (IntersectionObserver). Varsayılan: false */
+  /** Start typing when the paper scrolls into view (IntersectionObserver). Default: false */
   startOnVisible?: boolean;
-  /** Yazım sürerken imleci görünür alanda tutar. Varsayılan: false */
+  /** Keep the cursor in view while typing. Default: false */
   autoScroll?: boolean;
-  /** Her tuş vuruşunda çağrılır (atlanan kısım hariç). */
+  /** Called on every keystroke (not for skipped text). */
   onChar?: (char: string, element: HTMLElement) => void;
-  /** Her satır başında (çan sesiyle birlikte) çağrılır. */
+  /** Called at every new line, together with the carriage sound. */
   onLine?: (element: HTMLElement) => void;
-  /** İlk yazım bittiğinde (veya atlandığında) çağrılır; `destroy()` edilen örnekte çağrılmaz. */
+  /** Called once the initial typing finishes or is skipped; not called after `destroy()`. */
   onComplete?: () => void;
 }
 

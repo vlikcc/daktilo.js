@@ -5,25 +5,25 @@ import { injectStyles } from './styles';
 import type { PaperPreset, SoundEngine } from './types';
 
 export interface WriterOptions {
-  /** Varsayılan: 'vintage' */
+  /** Default: 'vintage' */
   paper?: PaperPreset;
-  /** Şerit/vurgu (ve imleç) rengi. Varsayılan: kağıt temasının şerit rengi. */
+  /** Ribbon/accent (and caret) colour. Default: the paper theme's ribbon colour. */
   ribbonColor?: string;
-  /** Varsayılan: '65ch' */
+  /** Paper width. Default: '65ch' */
   maxWidth?: string;
-  /** Çekirdekteki `fonts` ile aynı. Varsayılan: true */
+  /** Same as the core `fonts` option. Default: true */
   fonts?: boolean | string;
-  /** Çekirdekteki `styles` ile aynı. Varsayılan: true */
+  /** Same as the core `styles` option. Default: true */
   styles?: boolean;
-  /** `true`: sentez sesler; bir `SoundEngine` verilirse o kullanılır. Varsayılan: true */
+  /** `true`: synthesized sounds; pass a `SoundEngine` to use it instead. Default: true */
   sound?: boolean | SoundEngine;
-  /** Sentez ses seviyesi (0.0 - 1.0). Varsayılan: 0.4 */
+  /** Synth volume (0.0 - 1.0). Default: 0.4 */
   volume?: number;
-  /** Satırda bu sütuna ulaşınca kenar boşluğu çanı çalar (gerçek daktilodaki gibi). 0: kapalı. Varsayılan: 0 */
+  /** Rings the margin bell when the line reaches this column, like a real typewriter. 0: off. Default: 0 */
   bellColumn?: number;
-  /** Silme, kesme ve geri almayı engeller: kağıda basılan geri alınamaz. Varsayılan: false */
+  /** Blocks delete, cut and undo: what is on paper stays on paper. Default: false */
   noErase?: boolean;
-  /** prefers-reduced-motion: reduce aktifken sesi kapatır. Varsayılan: true */
+  /** Disables sound when `prefers-reduced-motion: reduce` is set. Default: true */
   respectReducedMotion?: boolean;
 }
 
@@ -35,8 +35,8 @@ const isField = (el: Element): el is HTMLTextAreaElement | HTMLInputElement =>
   el instanceof HTMLTextAreaElement || el instanceof HTMLInputElement;
 
 /**
- * Yazar modu: bir `<textarea>` veya `contenteditable` alanı daktilo kağıdına çevirir; yazarken
- * tuş, boşluk ve satır sonu sesleri çalar. Metin değiştirilmez, yalnızca görünüm ve ses eklenir.
+ * Writer mode: turns a `<textarea>` or `contenteditable` element into typewriter paper that clicks,
+ * thuds and rings as you type. The text itself is never changed; only looks and sound are added.
  */
 export class DaktiloWriter {
   readonly element: HTMLElement | null;
@@ -77,12 +77,12 @@ export class DaktiloWriter {
     };
   }
 
-  /** Ses seviyesini (0.0 - 1.0) değiştirir. */
+  /** Changes the volume (0.0 - 1.0). */
   setVolume(volume: number): void {
     this.#sound.setVolume?.(volume);
   }
 
-  /** Alanı başlatma öncesi hâline döndürür ve sesi kapatır; yazılan metne dokunmaz. */
+  /** Restores the element and disposes the sound engine; the written text is kept. */
   destroy(): void {
     this.#restore();
     this.#restore = () => undefined;

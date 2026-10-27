@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/vlikcc/daktilo.js/security/advisories/new
+    about: Please report security issues privately.
+  - name: Playground
+    url: https://vlikcc.github.io/daktilo.js/
+    about: Try the options live and share a link to your configuration.

@@ -4,7 +4,7 @@ export interface CssInJs {
   [selectorOrProperty: string]: string | CssInJs;
 }
 
-/** Tailwind'in `addComponents` beklediği CSS-in-JS nesnesine çevirir (iç içe @media/@keyframes dahil). */
+/** Converts CSS into the CSS-in-JS object Tailwind's `addComponents` expects (nested at-rules included). */
 export function cssToJs(css: string): CssInJs {
   const root: CssInJs = {};
   const stack = [root];
@@ -34,8 +34,8 @@ export function cssToJs(css: string): CssInJs {
 }
 
 /**
- * `cssToJs` çıktısındaki üst düzey `@media` bloklarını seçicilerin içine taşır: Tailwind v4,
- * `addComponents` içinde yalnızca sınıf seçicilerini (ve @keyframes'i) üst düzeyde kabul eder.
+ * Like `cssToJs`, but nests top-level `@media` blocks inside their selectors: Tailwind v4 only
+ * accepts class selectors (and @keyframes) at the top level of `addComponents`.
  */
 export function toComponents(css: string): CssInJs {
   const components = cssToJs(css);
@@ -54,9 +54,9 @@ interface PluginAPI {
 }
 
 /**
- * Tailwind CSS eklentisi (v3 ve v4). Daktilo sınıflarını (`daktilo-sheet`, `daktilo-theme-*`,
- * `daktilo-meta-header` …) bileşen katmanına ekler; `font-typewriter` ve `text-daktilo-ribbon`
- * gibi yardımcı sınıflar için tema değerleri tanımlar. JavaScript olmadan kağıt görünümü sağlar.
+ * Tailwind CSS plugin (v3 and v4). Adds the Daktilo classes (`daktilo-sheet`, `daktilo-theme-*`,
+ * `daktilo-meta-header` …) to the components layer and theme values for utilities such as
+ * `font-typewriter` and `text-daktilo-ribbon`: the paper look without JavaScript.
  */
 const daktilo = {
   handler({ addComponents }: PluginAPI): void {

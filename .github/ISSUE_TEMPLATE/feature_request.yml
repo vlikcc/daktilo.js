@@ -1,0 +1,21 @@
+name: Feature request
+description: Suggest an idea for daktilo-js
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would you like to do?
+      description: Describe the use case rather than only the solution.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed API or behaviour
+  - type: checkboxes
+    id: size
+    attributes:
+      label: Size budget
+      options:
+        - label: This could live in an optional module instead of the core (the core must stay under 6 KB).

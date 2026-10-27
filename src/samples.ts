@@ -1,17 +1,17 @@
 import { MechanicalSoundEngine } from './audio';
 
 export interface SoundSamples {
-  /** Tuş vuruşları içeren kayıt; vuruşlar otomatik ayrıştırılır ve her tuşta rastgele biri çalınır. */
+  /** Recording of key strikes; strikes are detected automatically and a random one plays per key. */
   key?: string;
-  /** Satır sonu çanı kaydı; olduğu gibi çalınır. */
+  /** Bell recording, played as-is. */
   bell?: string;
-  /** Ses seviyesi (0.0 - 1.0). Varsayılan: 0.4 */
+  /** Volume (0.0 - 1.0). Default: 0.4 */
   volume?: number;
 }
 
 type Hit = [offset: number, duration: number];
 
-/** Kayıttaki tuş vuruşlarını, 2 ms'lik enerji zarfında eşiği yukarı kesen ani yükselişlerden bulur. */
+/** Finds key strikes in a recording: sudden rises above a threshold in a 2 ms energy envelope. */
 export function detectHits(data: Float32Array, rate: number): Hit[] {
   const hop = Math.max(1, Math.round(rate * 0.002));
   const env: number[] = [];
@@ -41,14 +41,14 @@ function fetchAudio(url: string | undefined): Promise<ArrayBuffer | null> {
   return fetch(url)
     .then((res) => (res.ok ? res.arrayBuffer() : Promise.reject(new Error(`HTTP ${res.status}`))))
     .catch((error) => {
-      console.warn(`daktilo-js: ses dosyası yüklenemedi (${url})`, error);
+      console.warn(`daktilo-js: could not load sound file (${url})`, error);
       return null;
     });
 }
 
 /**
- * Sentez yerine gerçek daktilo kayıtlarını çalan ses motoru. Kayıtlar kullanıcı etkileşimiyle
- * ses kilidi açıldıktan sonra çözülür; o zamana kadar (veya yüklenemezlerse) sentez sesler çalar.
+ * Sound engine that plays real typewriter recordings instead of synthesis. Recordings are decoded
+ * once audio is unlocked by a user interaction; until then (or if they fail to load) the synth plays.
  */
 export class SampleSoundEngine extends MechanicalSoundEngine {
   #keyData: Promise<ArrayBuffer | null>;

@@ -1,4 +1,4 @@
-/** Türkçe Q klavyenin harf satırları (varsayılan düzen). */
+/** Letter rows of the Turkish Q layout (the default). */
 export const TURKISH_Q: readonly string[] = ['qwertyuıopğü', 'asdfghjklşi', 'zxcvbnmöç'];
 
 // Satırlar yarım tuş kaydırmalı olduğundan komşular (r±1, c) ve çapraz (r-1, c+1) / (r+1, c-1).

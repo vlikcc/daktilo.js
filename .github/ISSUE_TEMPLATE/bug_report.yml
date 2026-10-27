@@ -1,0 +1,47 @@
+name: Bug report
+description: Something does not work as documented
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction
+      description: Minimal HTML/JS, a CodePen/StackBlitz link, or the playground share link.
+      render: html
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: daktilo-js version
+      placeholder: 1.1.0
+    validations:
+      required: true
+  - type: dropdown
+    id: entry
+    attributes:
+      label: Which part?
+      multiple: true
+      options:
+        - Core (daktilo-js)
+        - Web Component (daktilo-js/element)
+        - React
+        - Vue
+        - Svelte
+        - Astro
+        - Tailwind plugin
+        - Writer mode (daktilo-js/editor)
+        - Sound samples
+        - Other
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS
+      placeholder: Firefox 140 on macOS 15

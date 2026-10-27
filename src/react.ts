@@ -15,8 +15,8 @@ import { Daktilo, type DaktiloOptions, type SoundEngine } from 'daktilo-js';
 
 export interface ReactDaktiloOptions extends Omit<DaktiloOptions, 'sound'> {
   /**
-   * Çekirdekteki `sound` ile aynı; ayrıca bir fabrika fonksiyonu alır. Motor her başlatmada
-   * `destroy()` ile kapatıldığından (ör. StrictMode'un çift effect çalıştırması) fabrika önerilir:
+   * Same as the core `sound` option, and also accepts a factory. Each mount disposes its engine on
+   * `destroy()` (StrictMode mounts twice), so prefer a factory:
    * `sound: () => new SampleSoundEngine({...})`
    */
   sound?: DaktiloOptions['sound'] | (() => SoundEngine);
@@ -28,9 +28,9 @@ const useIsomorphicLayoutEffect = typeof window === 'undefined' ? useEffect : us
 const CALLBACKS = ['onChar', 'onLine', 'onComplete'] as const;
 
 /**
- * Döndürülen `ref`'i bir elemana bağlayın; eleman bağlandığında Daktilo başlatılır ve bileşen
- * kaldırıldığında `destroy()` ile eski hâline döner. Seçenekler yalnızca başlatmada okunur;
- * yeniden başlatmak için `deps` verin. Olay callback'leri her zaman son render'daki hâliyle çağrılır.
+ * Attach the returned `ref` to an element: Daktilo starts when it mounts and `destroy()` restores it
+ * on unmount. Options are read once at mount; pass `deps` to restart. Event callbacks always use the
+ * latest render.
  */
 export function useDaktilo<T extends HTMLElement = HTMLElement>(
   options: ReactDaktiloOptions = {},
@@ -85,18 +85,18 @@ const OPTION_KEYS = new Set<string>([
 
 export interface DaktiloSheetProps
   extends ReactDaktiloOptions, Omit<HTMLAttributes<HTMLElement>, keyof ReactDaktiloOptions | 'children'> {
-  /** Kağıt olarak oluşturulacak etiket. Varsayılan: 'article' */
+  /** Tag rendered as the paper. Default: 'article' */
   as?: string;
-  /** Değiştiğinde kağıt içeriğiyle birlikte baştan oluşturulur ve yeniden yazılır. */
+  /** When it changes, the paper is recreated with the current children and typed again. */
   resetKey?: string | number;
-  /** Daktilo örneği hazır olduğunda çağrılır (ör. `skip()`, `pause()`, `type()` için). */
+  /** Called with the Daktilo instance once it is ready (for `skip()`, `pause()`, `type()` …). */
   onReady?: (daktilo: Daktilo) => void;
   children?: ReactNode;
 }
 
 /**
- * İçeriğini daktilo kağıdına çeviren bileşen. Daktilo DOM'u yeniden düzenlediği için çocuklar
- * `resetKey` değişene kadar dondurulur; dinamik içerik için `resetKey` verin.
+ * Renders its children on typewriter paper. Daktilo rearranges the DOM, so children are frozen
+ * until `resetKey` changes; pass a new `resetKey` for dynamic content.
  */
 export function DaktiloSheet({
   as = 'article',

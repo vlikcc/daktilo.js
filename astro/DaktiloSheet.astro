@@ -1,15 +1,14 @@
 ---
 /**
- * Astro bileşeni: içeriği daktilo kağıdına çevirir. Seçenekler çekirdekteki `DaktiloOptions` ile
- * aynıdır (fonksiyon alan olay callback'leri ve SoundEngine nesneleri hariç: bunlar sunucudan
- * tarayıcıya JSON olarak taşınamaz).
+ * Astro component: renders its content on typewriter paper. Props are the core `DaktiloOptions`,
+ * except event callbacks and SoundEngine objects, which cannot travel from server to browser as JSON.
  *
  *   ---
  *   import DaktiloSheet from 'daktilo-js/astro';
  *   ---
- *   <DaktiloSheet paper="vintage" animate stamp={{ docNo: '#84-A', classification: 'ARŞİV' }}>
- *     <h1>Gece Notları</h1>
- *     <p>Mekanik tuşların kağıt üzerindeki izi…</p>
+ *   <DaktiloSheet paper="vintage" animate stamp={{ docNo: '#84-A', classification: 'ARCHIVE' }}>
+ *     <h1>Night Notes</h1>
+ *     <p>The mark of mechanical keys on paper…</p>
  *   </DaktiloSheet>
  */
 import type { DaktiloOptions } from 'daktilo-js';
@@ -17,7 +16,7 @@ import type { DaktiloOptions } from 'daktilo-js';
 type SerializableOptions = Omit<DaktiloOptions, 'sound' | 'onChar' | 'onLine' | 'onComplete'> & { sound?: boolean };
 
 interface Props extends SerializableOptions {
-  /** Kağıt olarak oluşturulacak etiket. Varsayılan: 'article' */
+  /** Tag rendered as the paper. Default: 'article' */
   as?: string;
   class?: string;
   id?: string;
@@ -39,6 +38,6 @@ const { as: Tag = 'article', class: className, id, ...options } = Astro.props;
   }
 
   init();
-  // View Transitions ile sayfa değiştiğinde yeni kağıtlar da başlatılır.
+  // With View Transitions, sheets on newly loaded pages start too.
   document.addEventListener('astro:page-load', init);
 </script>

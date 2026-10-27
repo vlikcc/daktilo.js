@@ -1,0 +1,76 @@
+# Manual release (Actions → Release → Run workflow). Works without release branches or PRs:
+# applies pending changesets, commits the version bump to main, publishes to npm with provenance,
+# then pushes the tag and creates the GitHub release.
+#
+# npm auth: the first publish needs an `NPM_TOKEN` repository secret (automation token). After the
+# package exists you can configure npm "trusted publishing" for this workflow and delete the secret;
+# npm then authenticates with GitHub OIDC.
+name: Release
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      # Trusted publishing (OIDC) needs npm >= 11.5.1.
+      - run: npm install --global npm@11
+      - run: npm ci
+
+      - name: Check for pending changesets
+        id: pending
+        run: |
+          if ls .changeset/*.md 2>/dev/null | grep -v README.md >/dev/null; then
+            echo "found=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No pending changesets; nothing to release."
+          fi
+
+      - name: Version
+        if: steps.pending.outputs.found == 'true'
+        id: version
+        run: |
+          npx changeset version
+          npm install --package-lock-only --ignore-scripts
+          VERSION=$(node -p "require('./package.json').version")
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "chore: release v$VERSION"
+
+      - name: Publish to npm
+        if: steps.pending.outputs.found == 'true'
+        # prepublishOnly runs lint, typecheck, tests, build and the size check first.
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Push, tag and create the GitHub release
+        if: steps.pending.outputs.found == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git tag "v$VERSION"
+          git push origin HEAD:main "v$VERSION"
+          # The CHANGELOG section of this version becomes the release notes.
+          awk -v v="## $VERSION" '$0==v{on=1;next} /^## /{if(on)exit} on' CHANGELOG.md > notes.md
+          gh release create "v$VERSION" --title "v$VERSION" --notes-file notes.md

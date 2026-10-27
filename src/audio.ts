@@ -12,7 +12,7 @@ function audioContextCtor(): AudioContextCtor | undefined {
   return window.AudioContext ?? (window as unknown as { webkitAudioContext?: AudioContextCtor }).webkitAudioContext;
 }
 
-/** Harici ses dosyası kullanmadan Web Audio API ile mekanik daktilo sesleri sentezler. */
+/** Synthesizes mechanical typewriter sounds with the Web Audio API, without any audio files. */
 export class MechanicalSoundEngine implements SoundEngine {
   protected volume: number;
   #ctx: AudioContext | null = null;
@@ -34,7 +34,7 @@ export class MechanicalSoundEngine implements SoundEngine {
     this.volume = Math.min(1, Math.max(0, volume));
   }
 
-  /** Tuş vuruşu (bandpass, 1100-1600Hz) veya boşluk tuşu (lowpass, 400-600Hz) sesi. */
+  /** Key strike (bandpass, 1100-1600 Hz) or space bar thud (lowpass, 400-600 Hz). */
   playKeyClick(isSpace = false): void {
     const ctx = this.ready();
     if (!ctx) return;
@@ -55,7 +55,7 @@ export class MechanicalSoundEngine implements SoundEngine {
     source.start(now);
   }
 
-  /** Satır sonu çanı: 2200Hz sine ve metalik tını için uyumsuz (inharmonic) bir üst kısmi. */
+  /** Bell: a 2200 Hz sine plus an inharmonic partial for a metallic timbre. */
   playCarriageDing(): void {
     const ctx = this.ready();
     if (!ctx) return;
@@ -82,7 +82,7 @@ export class MechanicalSoundEngine implements SoundEngine {
     UNLOCK_EVENTS.forEach((type) => window.removeEventListener(type, this.#unlock));
   }
 
-  /** Ses çalınabilir durumdaysa (etkin, kilidi açık, ses > 0) bağlamı döndürür. */
+  /** Returns the audio context when sound can play (enabled, unlocked, volume > 0). */
   protected ready(): AudioContext | null {
     const ctx = this.#ctx;
     return this.#enabled && this.volume > 0 && ctx && ctx.state === 'running' ? ctx : null;
