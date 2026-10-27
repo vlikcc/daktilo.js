@@ -1,4 +1,4 @@
-import { COLLAPSIBLE, graphemes, isSkipped } from './dom';
+import { COLLAPSIBLE, create, ELEMENT_NODE, graphemes, isSkipped, TEXT_NODE } from './dom';
 import { inkSpan } from './ink';
 import { neighborKey } from './keyboard';
 import type { ResolvedOptions, SoundEngine } from './types';
@@ -10,6 +10,8 @@ const SPACE = /\s/;
 const COLLAPSIBLE_CHAR = /^[ \t\n\r\f]+$/;
 /** İçinde yazım hatası yapılmayan elemanlar: kod ve klavye girdisi birebir korunur. */
 const NO_TYPOS = 'code,kbd,samp,pre';
+/** Kenar çanı, imleç sağ kenara bu kadar karakter kala çalar (gerçek daktilolarda ~5-8). */
+const MARGIN_CHARS = 6;
 
 const isBlock = (el: Element): boolean => !/^(inline|contents|none)/.test(getComputedStyle(el).display);
 
@@ -22,7 +24,8 @@ const preservesWhitespace = (el: Element | null): boolean =>
  */
 export class Typist {
   #opts: ResolvedOptions;
-  #sound: SoundEngine;
+  /** Sessize alınmışsa undefined döner. */
+  #sound: () => SoundEngine | undefined;
   /** Kağıt elemanı: satır ölçümü ve olaylar bu elemana göredir. */
   readonly sheet: HTMLElement;
   /** `finish()` veya `cancel()` sonrası kalan metin beklemesiz ve sessiz yazılır. */
@@ -31,26 +34,28 @@ export class Typist {
   #paused = false;
   #timer: ReturnType<typeof setTimeout> | undefined;
   #wake: (() => void) | null = null;
-  #cursor = document.createElement('span');
+  #cursor = create('span', 'daktilo-cursor', '█');
+  /** Yazım kutusu: dolgusu olmadığından sağ kenarı metnin sağ kenar boşluğudur. */
+  #box!: Element;
   /** İmlecin hemen önündeki, yeni düz harflerin eklendiği metin düğümü. */
   #text: Text | null = null;
   #prev = '\n';
   #typedAny = false;
   #pendingReturn = false;
   #lineTop = NaN;
+  /** Bu satırda kenar çanı çaldı mı. */
+  #rang = false;
 
-  constructor(opts: ResolvedOptions, sound: SoundEngine, sheet: HTMLElement) {
+  constructor(opts: ResolvedOptions, sound: () => SoundEngine | undefined, sheet: HTMLElement) {
     this.#opts = opts;
     this.#sound = sound;
     this.sheet = sheet;
-    this.#cursor.className = 'daktilo-cursor';
     this.#cursor.setAttribute('aria-hidden', 'true');
-    this.#cursor.textContent = '█';
   }
 
   /** `nodes` kökten ayrılmış orijinal çocuklardır; yazım `start` çözülünce başlar. İptal edilirse false döner. */
   async type(root: Element, nodes: Node[], start?: Promise<unknown>): Promise<boolean> {
-    root.append(this.#cursor);
+    (this.#box = root).append(this.#cursor);
     try {
       if (start) await this.#wait(start);
       for (const node of nodes) await this.#typeNode(node);
@@ -105,8 +110,8 @@ export class Typist {
   }
 
   async #typeNode(node: Node): Promise<void> {
-    if (node.nodeType === Node.TEXT_NODE) return this.#typeText(node as Text);
-    if (node.nodeType !== Node.ELEMENT_NODE) return this.#place(node);
+    if (node.nodeType === TEXT_NODE) return this.#typeText(node as Text);
+    if (node.nodeType !== ELEMENT_NODE) return this.#place(node);
 
     const el = node as Element;
     if (isSkipped(el) || !el.hasChildNodes()) {
@@ -161,7 +166,7 @@ export class Typist {
       this.#prev = char;
       return;
     }
-    this.#sound.playKeyClick(SPACE.test(char));
+    this.#sound()?.playKeyClick(SPACE.test(char));
     this.#opts.onChar?.(char, this.sheet);
     const delay = this.#delay(char);
     this.#prev = char;
@@ -186,16 +191,14 @@ export class Typist {
 
   /** Yanlış (komşu) tuşa basılır, yazar fark edip geri gelir ve üzerine overstrike karakteri basar. */
   async #overstrike(char: string): Promise<void> {
-    const typo = document.createElement('span');
-    typo.className = 'daktilo-overstrike';
+    const typo = create('span', 'daktilo-overstrike', neighborKey(char, this.#opts.keyboard));
     typo.setAttribute('aria-hidden', 'true');
-    typo.textContent = neighborKey(char, this.#opts.keyboard);
     this.#place(typo);
-    this.#sound.playKeyClick(false);
+    this.#sound()?.playKeyClick(false);
     await this.#wait(Math.max(150, this.#opts.speed * 2.5));
     typo.dataset.strike = this.#opts.overstrikeChar;
     if (this.#fast) return;
-    this.#sound.playKeyClick(false);
+    this.#sound()?.playKeyClick(false);
     await this.#wait(this.#opts.speed * 1.8);
   }
 
@@ -206,19 +209,28 @@ export class Typist {
   async #carriageReturn(): Promise<void> {
     this.#prev = '\n';
     this.#lineTop = NaN;
+    this.#rang = false;
     if (this.#fast) return;
-    this.#sound.playCarriageDing();
+    this.#sound()?.playCarriageReturn?.();
     this.#opts.onLine?.(this.sheet);
     if (this.#opts.autoScroll) this.#cursor.scrollIntoView?.({ block: 'nearest' });
     await this.#wait(this.#opts.speed * 4);
   }
 
-  /** İmleç bir alt satıra geçtiyse (metin sarıldıysa) true döner. Konum kağıda göre ölçülür; kaydırma etkilemez. */
+  /**
+   * İmleç bir alt satıra geçtiyse (metin sarıldıysa) true döner. Konum kağıda göre ölçülür; kaydırma
+   * etkilemez. Satır sağ kenara yaklaştığında kenar çanını bir kez çalar.
+   */
   #wrapped(): boolean {
     const rect = this.#cursor.getBoundingClientRect();
-    const top = rect.top - this.sheet.getBoundingClientRect().top;
+    const box = this.#box.getBoundingClientRect();
+    const top = rect.top - box.top;
     const wrapped = top - this.#lineTop > Math.max(4, rect.height * 0.6);
     this.#lineTop = top;
+    if (!wrapped && !this.#rang && box.right - rect.right < rect.width * MARGIN_CHARS) {
+      this.#rang = true;
+      this.#sound()?.playCarriageDing();
+    }
     return wrapped;
   }
 

@@ -1,4 +1,4 @@
-import { collectTextNodes, graphemes } from './dom';
+import { collectTextNodes, create, graphemes } from './dom';
 
 export const INK_BLEED_RATE = 0.03;
 
@@ -12,9 +12,7 @@ export function inkSpan(char: string, wear: number, rand: () => number = Math.ra
   const worn = rand() < wear;
   const bleed = rand() < INK_BLEED_RATE;
   if (!worn && !bleed) return null;
-  const span = document.createElement('span');
-  span.className = 'daktilo-ink';
-  span.textContent = char;
+  const span = create('span', 'daktilo-ink', char);
   if (worn) {
     span.style.top = `${((rand() - 0.5) * 1.2).toFixed(2)}px`;
     span.style.opacity = (0.72 + rand() * 0.28).toFixed(2);

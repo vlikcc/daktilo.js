@@ -77,6 +77,15 @@ describe('MechanicalSoundEngine', () => {
     engine.dispose();
   });
 
+  it('satır başı sesini cırcır zarflı gürültüden süzgeç süpürmesiyle sentezler', async () => {
+    const engine = new MechanicalSoundEngine(true, 0.4);
+    window.dispatchEvent(new Event('keydown'));
+    await Promise.resolve();
+    engine.playCarriageReturn();
+    expect(created).toEqual(['source', 'filter']);
+    engine.dispose();
+  });
+
   it('tüm örnekler tek AudioContext paylaşır', async () => {
     const before = FakeAudioContext.instances;
     const a = new MechanicalSoundEngine(true);

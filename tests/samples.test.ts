@@ -25,6 +25,7 @@ const played: Played[] = [];
 const gains: Array<ReturnType<typeof param>> = [];
 const keyBuffer = { duration: 2, sampleRate: RATE, getChannelData: () => recording([0.2, 0.5, 0.9]) };
 const bellBuffer = { duration: 1.9, sampleRate: RATE, getChannelData: () => new Float32Array(10) };
+const returnBuffer = { duration: 0.6, sampleRate: RATE, getChannelData: () => new Float32Array(10) };
 
 class FakeAudioContext {
   state = 'running';
@@ -32,9 +33,10 @@ class FakeAudioContext {
   sampleRate = RATE;
   destination = {};
   resume = async () => undefined;
-  decodeAudioData = vi.fn(async (data: ArrayBuffer) =>
-    (data as { url?: string }).url === 'bell' ? bellBuffer : keyBuffer,
-  );
+  decodeAudioData = vi.fn(async (data: ArrayBuffer) => {
+    const { url } = data as { url?: string };
+    return url === 'bell' ? bellBuffer : url === 'return' ? returnBuffer : keyBuffer;
+  });
   createBuffer = (_channels: number, length: number) => {
     const data = new Float32Array(length);
     return { synth: true, getChannelData: () => data };
@@ -141,7 +143,7 @@ describe('SampleSoundEngine', () => {
     engine.dispose();
   });
 
-  it('boşluk tuşunda vuruşu daha pes çalar, çanda kaydın tamamını çalar', async () => {
+  it('boşluk tuşunda vuruşu daha pes çalar; birleşik çan kaydını satır başında tamamen çalar', async () => {
     const engine = new SampleSoundEngine({ key: 'keys', bell: 'bell' });
     window.dispatchEvent(new Event('pointerdown'));
     engine.playKeyClick();
@@ -150,10 +152,28 @@ describe('SampleSoundEngine', () => {
     engine.playKeyClick(true);
     expect(played[played.length - 1].rate).toBe(0.8);
 
+    // Yalnızca `bell` verildiğinde kayıt "çan + satır başı" sayılır: kenarda ikinci bir çan çalmaz.
+    const before = played.length;
     engine.playCarriageDing();
+    expect(played).toHaveLength(before);
+
+    engine.playCarriageReturn();
     const bell = played[played.length - 1];
     expect(bell.buffer).toBe(bellBuffer);
     expect(bell.args).toHaveLength(1);
+    engine.dispose();
+  });
+
+  it('ayrı bir return kaydı verilirse çan kenarda, return kaydı satır başında çalar', async () => {
+    const engine = new SampleSoundEngine({ key: 'keys', bell: 'bell', return: 'return' });
+    window.dispatchEvent(new Event('pointerdown'));
+    engine.playKeyClick();
+    await flush();
+
+    engine.playCarriageDing();
+    expect(played[played.length - 1].buffer).toBe(bellBuffer);
+    engine.playCarriageReturn();
+    expect(played[played.length - 1].buffer).toBe(returnBuffer);
     engine.dispose();
   });
 

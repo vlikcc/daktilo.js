@@ -105,6 +105,17 @@ describe('<daktilo-sheet>', () => {
     expect(el.querySelectorAll('p')).toHaveLength(2);
   });
 
+  it('texture özniteliğiyle kağıt dokularını ekler ve yeniden başlatmada korur', () => {
+    document.body.innerHTML = '<daktilo-sheet ink-wear="0" texture="stain  holes"><p>x</p></daktilo-sheet>';
+    const el = document.querySelector('daktilo-sheet')!;
+    expect(el.classList).toContain('daktilo-texture-stain');
+    expect(el.classList).toContain('daktilo-texture-holes');
+    el.setAttribute('paper', 'carbon');
+    expect(el.classList).toContain('daktilo-texture-stain');
+    el.removeAttribute('texture');
+    expect(el.classList).not.toContain('daktilo-textured');
+  });
+
   it('başka bir etiket adıyla da kaydedilebilir', () => {
     defineDaktiloElement('my-paper');
     document.body.innerHTML = '<my-paper ink-wear="0"><p>x</p></my-paper>';

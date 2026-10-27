@@ -62,6 +62,15 @@ describe('daktilo-js/editor (Yazar modu)', () => {
     expect(sound.playCarriageDing).toHaveBeenCalledOnce();
   });
 
+  it('motor destekliyorsa Enter’da satır başı sesini çalar', () => {
+    const sound = { ...fakeSound(), playCarriageReturn: vi.fn() };
+    const el = document.getElementById('t')!;
+    new DaktiloWriter(el, { sound });
+    input(el, 'insertLineBreak');
+    expect(sound.playCarriageReturn).toHaveBeenCalledOnce();
+    expect(sound.playCarriageDing).not.toHaveBeenCalled();
+  });
+
   it('noErase ile silme ve geri almayı engeller', () => {
     const el = document.getElementById('t')!;
     new DaktiloWriter(el, { sound: fakeSound(), noErase: true });
@@ -105,7 +114,7 @@ describe('daktilo-js/editor (Yazar modu)', () => {
 describe('daktilo-js/tailwind', () => {
   it('çekirdek CSS’i iç içe at-rule’larla CSS-in-JS nesnesine çevirir', () => {
     const js = cssToJs(CSS);
-    expect(js['.daktilo-theme-vintage']).toMatchObject({ '--daktilo-paper': '#f4f1ea' });
+    expect(js['.daktilo-theme-vintage,.daktilo-theme-auto']).toMatchObject({ '--daktilo-paper': '#f4f1ea' });
     expect(js['@keyframes daktilo-blink']).toEqual({ '50%': { opacity: '0' } });
     expect(js['@media (prefers-reduced-motion:reduce)']).toEqual({ '.daktilo-cursor': { animation: 'none' } });
     expect(js['.daktilo-overstrike[data-strike]::after']).toMatchObject({ content: 'attr(data-strike)' });

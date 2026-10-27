@@ -1,12 +1,13 @@
 import { MechanicalSoundEngine } from './audio';
 import { canUseDOM, prefersReducedMotion, preserveAttributes } from './dom';
 import { PAPERS } from './options';
+import { applyPaper } from './stamp';
 import { injectStyles } from './styles';
-import type { PaperPreset, SoundEngine } from './types';
+import type { PaperColors, PaperPreset, SoundEngine } from './types';
 
 export interface WriterOptions {
-  /** Default: 'vintage' */
-  paper?: PaperPreset;
+  /** A theme name or custom colours. Default: 'vintage' */
+  paper?: PaperPreset | PaperColors;
   /** Ribbon/accent (and caret) colour. Default: the paper theme's ribbon colour. */
   ribbonColor?: string;
   /** Paper width. Default: '65ch' */
@@ -64,8 +65,9 @@ export class DaktiloWriter {
       document.head.append(style);
     }
     const restoreAttributes = preserveAttributes(el, ['class', 'style', 'contenteditable', 'spellcheck']);
-    const paper = options.paper && PAPERS.includes(options.paper) ? options.paper : 'vintage';
-    el.classList.add('daktilo-sheet', `daktilo-theme-${paper}`, 'daktilo-writer');
+    const { paper } = options;
+    applyPaper(el, typeof paper === 'object' || PAPERS.includes(paper!) ? paper! : 'vintage');
+    el.classList.add('daktilo-writer');
     el.style.setProperty('--daktilo-width', options.maxWidth || '65ch');
     if (options.ribbonColor) el.style.setProperty('--daktilo-ribbon', options.ribbonColor);
     if (!isField(el) && !el.isContentEditable) el.setAttribute('contenteditable', 'true');
@@ -95,7 +97,8 @@ export class DaktiloWriter {
       if (this.#noErase) event.preventDefault();
       else this.#sound.playKeyClick(false);
     } else if (inputType === 'insertLineBreak' || inputType === 'insertParagraph') {
-      this.#sound.playCarriageDing();
+      if (this.#sound.playCarriageReturn) this.#sound.playCarriageReturn();
+      else this.#sound.playCarriageDing();
     } else if (inputType === 'insertText' && data) {
       this.#sound.playKeyClick(/\s/.test(data));
       if (this.#bellColumn && this.#column() + data.length === this.#bellColumn) this.#sound.playCarriageDing();
@@ -117,4 +120,4 @@ export class DaktiloWriter {
   }
 }
 
-export type { PaperPreset, SoundEngine } from './types';
+export type { PaperColors, PaperPreset, SoundEngine } from './types';

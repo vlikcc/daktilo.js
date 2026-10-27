@@ -16,7 +16,10 @@ const optional = [
   'dist/editor.mjs',
   'dist/element.mjs',
   'dist/element.global.js',
+  'dist/textures.mjs',
   'dist/react.mjs',
+  'dist/vue.mjs',
+  'dist/svelte.mjs',
   'dist/tailwind.mjs',
   'dist/daktilo.css',
 ];

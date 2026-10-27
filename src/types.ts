@@ -1,4 +1,16 @@
-export type PaperPreset = 'vintage' | 'clean' | 'carbon';
+/** Built-in paper themes. `auto` follows the system: `vintage` in light mode, `carbon` in dark mode. */
+export type PaperPreset = 'vintage' | 'clean' | 'carbon' | 'auto';
+
+/** Custom paper colours (any CSS colour). Unset values fall back to the `vintage` theme. */
+export interface PaperColors {
+  paper?: string;
+  ink?: string;
+  ribbon?: string;
+  /** Heading and header rule colour. */
+  rule?: string;
+  /** Colour of the paper's pore texture dots. */
+  pore?: string;
+}
 
 export interface StampLabels {
   /** Default: 'KAYIT' */
@@ -24,14 +36,17 @@ export interface StampMetadata {
 /** Sounds played by the typing engine. The instance owns it: `destroy()` disposes it too. */
 export interface SoundEngine {
   playKeyClick(isSpace?: boolean): void;
+  /** The margin bell, rung once per line a few characters before the right margin. */
   playCarriageDing(): void;
+  /** The carriage return at the start of every new line. Optional for custom engines. */
+  playCarriageReturn?(): void;
   dispose(): void;
   setVolume?(volume: number): void;
 }
 
 export interface DaktiloOptions {
-  /** Default: 'vintage' */
-  paper?: PaperPreset;
+  /** A theme name or custom colours. Default: 'vintage' */
+  paper?: PaperPreset | PaperColors;
   /** Ribbon/accent colour. Default: the paper theme's ribbon colour ('#c84b31' for vintage). */
   ribbonColor?: string;
   /** Paper width. Default: '65ch' */

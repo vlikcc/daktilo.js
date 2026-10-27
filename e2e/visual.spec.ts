@@ -69,3 +69,14 @@ test('evrak damgası ve overstrike', async ({ page }) => {
   });
   await expect(page.locator('#visual')).toHaveScreenshot('stamp.png', SHOT);
 });
+
+test('kağıt dokuları', async ({ page }) => {
+  await render(page, { paper: 'vintage', inkWear: 0 });
+  await page.addScriptTag({ url: '/dist/textures.global.js' });
+  await page.evaluate(() => {
+    const { applyTextures } = (window as unknown as { DaktiloTextures: typeof import('../src/textures') })
+      .DaktiloTextures;
+    applyTextures(document.getElementById('visual')!, ['stain', 'fold', 'holes', 'aged']);
+  });
+  await expect(page.locator('#visual')).toHaveScreenshot('textures.png', SHOT);
+});

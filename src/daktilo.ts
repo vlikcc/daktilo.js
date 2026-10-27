@@ -1,8 +1,8 @@
 import { MechanicalSoundEngine } from './audio';
-import { canUseDOM, prefersReducedMotion, preserveAttributes, snapshot } from './dom';
+import { canUseDOM, create, prefersReducedMotion, preserveAttributes, snapshot } from './dom';
 import { applyInkWear } from './ink';
 import { resolveOptions } from './options';
-import { renderStamp } from './stamp';
+import { applyPaper, renderStamp } from './stamp';
 import { fontsReady, injectStyles } from './styles';
 import { Typist } from './typist';
 import type { DaktiloOptions, DaktiloTarget, ResolvedOptions, SoundEngine } from './types';
@@ -18,12 +18,6 @@ function resolveTargets(target: DaktiloTarget): HTMLElement[] {
   return elements;
 }
 
-const div = (className?: string): HTMLDivElement => {
-  const el = document.createElement('div');
-  if (className) el.className = className;
-  return el;
-};
-
 export class Daktilo {
   readonly elements: HTMLElement[];
   readonly options: ResolvedOptions;
@@ -32,7 +26,6 @@ export class Daktilo {
   /** While `true`, key and carriage sounds are silenced. */
   muted = false;
   #sound!: SoundEngine;
-  #voice: SoundEngine;
   #reduced: boolean;
   #volume: number;
   #animate: boolean;
@@ -50,11 +43,6 @@ export class Daktilo {
     this.#reduced = o.respectReducedMotion && prefersReducedMotion();
     this.#volume = o.volume;
     this.setSound(o.sound);
-    this.#voice = {
-      playKeyClick: (isSpace) => this.muted || this.#sound.playKeyClick(isSpace),
-      playCarriageDing: () => this.muted || this.#sound.playCarriageDing(),
-      dispose() {},
-    };
     if (this.elements.length) injectStyles(o.fonts, o.styles);
     this.#animate = o.animate && !this.#reduced;
     this.finished = Promise.all(this.elements.map((el) => this.#mount(el))).then(() => undefined);
@@ -108,10 +96,8 @@ export class Daktilo {
     return Promise.all(
       this.elements.map((el, i) => {
         let node = content;
-        if (typeof node === 'string') {
-          node = document.createElement('p');
-          node.textContent = content as string;
-        } else if (i) node = node.cloneNode(true);
+        if (typeof node === 'string') node = create('p', '', node);
+        else if (i) node = node.cloneNode(true);
         return this.#enqueue(el, [node]);
       }),
     ).then(() => undefined);
@@ -143,7 +129,7 @@ export class Daktilo {
     activeMounts.set(el, cleanup);
     this.#cleanups.push(cleanup);
 
-    el.classList.add('daktilo-sheet', `daktilo-theme-${o.paper}`);
+    applyPaper(el, o.paper);
     el.style.setProperty('--daktilo-width', o.maxWidth);
     if (o.ribbonColor) el.style.setProperty('--daktilo-ribbon', o.ribbonColor);
 
@@ -187,13 +173,12 @@ export class Daktilo {
    */
   async #type(el: HTMLElement, nodes: Node[], text: string, id: number, start?: Promise<unknown>): Promise<void> {
     if (this.#dead.has(el)) return;
-    const sr = div('daktilo-sr');
-    sr.textContent = text;
-    const box = div();
+    const sr = create('div', 'daktilo-sr', text);
+    const box = create('div');
     box.setAttribute('aria-hidden', 'true');
     el.append(sr, box);
     el.setAttribute('aria-busy', 'true');
-    const typist = new Typist(this.options, this.#voice, el);
+    const typist = new Typist(this.options, () => (this.muted ? undefined : this.#sound), el);
     this.#typists.add(typist);
     if (this.#paused) typist.pause();
     if (id <= this.#skipUntil) typist.finish();

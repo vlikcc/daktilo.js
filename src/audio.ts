@@ -16,7 +16,7 @@ function audioContextCtor(): AudioContextCtor | undefined {
 export class MechanicalSoundEngine implements SoundEngine {
   protected volume: number;
   #ctx: AudioContext | null = null;
-  #buffers = new Map<boolean, AudioBuffer>();
+  #buffers = new Map<string, AudioBuffer>();
   #enabled: boolean;
 
   constructor(enabled = false, volume = 0.4) {
@@ -38,24 +38,28 @@ export class MechanicalSoundEngine implements SoundEngine {
   playKeyClick(isSpace = false): void {
     const ctx = this.ready();
     if (!ctx) return;
-    const now = ctx.currentTime;
-    const source = ctx.createBufferSource();
-    source.buffer = this.#noiseBuffer(ctx, isSpace);
-    source.playbackRate.value = 0.9 + Math.random() * 0.2;
-
-    const filter = ctx.createBiquadFilter();
-    filter.type = isSpace ? 'lowpass' : 'bandpass';
-    filter.frequency.setValueAtTime(isSpace ? 400 + Math.random() * 200 : 1100 + Math.random() * 500, now);
-    filter.Q.setValueAtTime(isSpace ? 1.2 : 2.5, now);
-
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(this.volume * (isSpace ? 1.6 : 1), now);
-
-    source.connect(filter).connect(gain).connect(ctx.destination);
-    source.start(now);
+    const r = Math.random();
+    if (isSpace)
+      this.#burst(
+        ctx,
+        this.#noise(ctx, 's', 0.045, (t) => Math.exp(-t / 0.012)),
+        'lowpass',
+        400 + r * 200,
+        1.2,
+        1.6,
+      );
+    else
+      this.#burst(
+        ctx,
+        this.#noise(ctx, 'k', 0.025, (t) => Math.exp(-t / 0.006)),
+        'bandpass',
+        1100 + r * 500,
+        2.5,
+        1,
+      );
   }
 
-  /** Bell: a 2200 Hz sine plus an inharmonic partial for a metallic timbre. */
+  /** Margin bell: a 2200 Hz sine plus an inharmonic partial for a metallic timbre. */
   playCarriageDing(): void {
     const ctx = this.ready();
     if (!ctx) return;
@@ -74,6 +78,20 @@ export class MechanicalSoundEngine implements SoundEngine {
       osc.start(now);
       osc.stop(now + 0.65);
     }
+  }
+
+  /** Carriage return: the ratchet buzz of the sliding carriage, ending in a thud. */
+  playCarriageReturn(): void {
+    const ctx = this.ready();
+    if (!ctx) return;
+    // cos^8 her ~26 ms'de keskin bir cırcır dişi verir; sonda kızak durunca tok bir vuruş gelir.
+    const buffer = this.#noise(
+      ctx,
+      'r',
+      0.34,
+      (t) => Math.exp(-t * 4) * (0.3 + 0.7 * Math.cos(t * 240) ** 8) + (t > 0.3 ? 2 * Math.exp((0.3 - t) * 90) : 0),
+    );
+    this.#burst(ctx, buffer, 'bandpass', 2600, 1, 1.4).exponentialRampToValueAtTime(700, ctx.currentTime + 0.3);
   }
 
   dispose(): void {
@@ -97,17 +115,32 @@ export class MechanicalSoundEngine implements SoundEngine {
     if (this.#ctx.state === 'suspended') void this.#ctx.resume().catch(() => undefined);
   };
 
-  // Mekanik darbe zarfı: keskin atak, üstel sönüm. Gürültü bir kez üretilir; her vuruşta filtre değişir.
-  #noiseBuffer(ctx: AudioContext, isSpace: boolean): AudioBuffer {
-    let buffer = this.#buffers.get(isSpace);
+  /** Gürültü tamponunu filtre ve ses seviyesinden geçirip çalar; filtre frekansını döndürür. */
+  #burst(ctx: AudioContext, buffer: AudioBuffer, type: BiquadFilterType, frequency: number, q: number, level: number) {
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.playbackRate.value = 0.9 + Math.random() * 0.2;
+    const filter = ctx.createBiquadFilter();
+    filter.type = type;
+    filter.frequency.value = frequency;
+    filter.Q.value = q;
+    const gain = ctx.createGain();
+    gain.gain.value = this.volume * level;
+    source.connect(filter).connect(gain).connect(ctx.destination);
+    source.start();
+    return filter.frequency;
+  }
+
+  /** Zarfı `envelope(t)` olan beyaz gürültü; her ses için bir kez üretilir, her çalışta filtre değişir. */
+  #noise(ctx: AudioContext, key: string, seconds: number, envelope: (t: number) => number): AudioBuffer {
+    let buffer = this.#buffers.get(key);
     if (buffer) return buffer;
     const rate = ctx.sampleRate;
-    const length = Math.floor(rate * (isSpace ? 0.045 : 0.025));
-    const decay = rate * (isSpace ? 0.012 : 0.006);
+    const length = Math.floor(rate * seconds);
     buffer = ctx.createBuffer(1, length, rate);
     const data = buffer.getChannelData(0);
-    for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * Math.exp(-i / decay);
-    this.#buffers.set(isSpace, buffer);
+    for (let i = 0; i < length; i++) data[i] = (Math.random() * 2 - 1) * envelope(i / rate);
+    this.#buffers.set(key, buffer);
     return buffer;
   }
 }

@@ -85,3 +85,37 @@ test('Yazar modu gerçek klavye girişinde ses çalar, noErase silmeyi engeller'
   await expect(writer).toHaveValue('ab c\n');
   expect(await page.evaluate(() => window.calls)).toMatchObject({ key: 4, ding: 1 });
 });
+
+test("paper: 'auto' sistem temasına göre vintage veya carbon renklerini kullanır", async ({ page }) => {
+  await page.evaluate(() => window.start('<p>abc</p>', { paper: 'auto', animate: false }));
+  const paperColor = () =>
+    page.locator('#sheet').evaluate((el) => getComputedStyle(el).getPropertyValue('--daktilo-paper').trim());
+  await page.emulateMedia({ colorScheme: 'light' });
+  expect(await paperColor()).toBe('#f4f1ea');
+  await page.emulateMedia({ colorScheme: 'dark' });
+  expect(await paperColor()).toBe('#18181b');
+});
+
+test('yazdırırken gölge ve imleç gizlenir; <mark> kırmızı şeritle basılır', async ({ page }) => {
+  await page.evaluate(() => {
+    void window.start('<p>önemli <mark>kırmızı</mark> uzun bir metin</p>', { speed: 200 });
+  });
+  const ribbon = await page
+    .locator('#sheet')
+    .evaluate((el) => getComputedStyle(el).getPropertyValue('--daktilo-ribbon').trim());
+  await page.emulateMedia({ media: 'print' });
+  expect(await page.locator('#sheet').evaluate((el) => getComputedStyle(el).boxShadow)).toBe('none');
+  expect(await page.locator('.daktilo-cursor').evaluate((el) => getComputedStyle(el).display)).toBe('none');
+  await page.evaluate(() => window.daktilo.skip());
+  const mark = await page.locator('#sheet mark').evaluate((el) => {
+    const probe = document.createElement('span');
+    probe.style.color = getComputedStyle(el.closest('#sheet')!).getPropertyValue('--daktilo-ribbon');
+    document.body.append(probe);
+    const expected = getComputedStyle(probe).color;
+    probe.remove();
+    return { color: getComputedStyle(el).color, expected, background: getComputedStyle(el).backgroundColor };
+  });
+  expect(ribbon).toBe('#c84b31');
+  expect(mark.color).toBe(mark.expected);
+  expect(mark.background).toBe('rgba(0, 0, 0, 0)');
+});

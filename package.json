@@ -12,7 +12,10 @@
     "typing-animation",
     "react",
     "astro",
-    "tailwindcss"
+    "tailwindcss",
+    "vue",
+    "svelte",
+    "web-component"
   ],
   "license": "MIT",
   "author": "Veli Keçeci",
@@ -81,6 +84,16 @@
         "default": "./dist/element.cjs"
       }
     },
+    "./textures": {
+      "import": {
+        "types": "./dist/textures.d.mts",
+        "default": "./dist/textures.mjs"
+      },
+      "require": {
+        "types": "./dist/textures.d.ts",
+        "default": "./dist/textures.cjs"
+      }
+    },
     "./react": {
       "import": {
         "types": "./dist/react.d.mts",
@@ -89,6 +102,26 @@
       "require": {
         "types": "./dist/react.d.ts",
         "default": "./dist/react.cjs"
+      }
+    },
+    "./vue": {
+      "import": {
+        "types": "./dist/vue.d.mts",
+        "default": "./dist/vue.mjs"
+      },
+      "require": {
+        "types": "./dist/vue.d.ts",
+        "default": "./dist/vue.cjs"
+      }
+    },
+    "./svelte": {
+      "import": {
+        "types": "./dist/svelte.d.mts",
+        "default": "./dist/svelte.mjs"
+      },
+      "require": {
+        "types": "./dist/svelte.d.ts",
+        "default": "./dist/svelte.cjs"
       }
     },
     "./tailwind": {
@@ -148,16 +181,21 @@
     "tsup": "^8.3.0",
     "typescript": "^5.6.0",
     "typescript-eslint": "^8.72.0",
-    "vitest": "^2.1.0"
+    "vitest": "^2.1.0",
+    "vue": "^3.5.44"
   },
   "engines": {
     "node": ">=18"
   },
   "peerDependencies": {
-    "react": ">=18"
+    "react": ">=18",
+    "vue": ">=3.3"
   },
   "peerDependenciesMeta": {
     "react": {
+      "optional": true
+    },
+    "vue": {
       "optional": true
     }
   }

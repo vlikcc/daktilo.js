@@ -1,7 +1,7 @@
 import { TURKISH_Q } from './keyboard';
 import type { DaktiloOptions, PaperPreset, ResolvedOptions } from './types';
 
-export const PAPERS: readonly PaperPreset[] = ['vintage', 'clean', 'carbon'];
+export const PAPERS: readonly PaperPreset[] = ['vintage', 'clean', 'carbon', 'auto'];
 
 const DEFAULTS = {
   maxWidth: '65ch',
@@ -27,7 +27,7 @@ export function resolveOptions(options: DaktiloOptions = {}): ResolvedOptions {
   };
   return {
     ...(o as Required<DaktiloOptions>),
-    paper: o.paper && PAPERS.includes(o.paper) ? o.paper : 'vintage',
+    paper: typeof o.paper === 'object' || PAPERS.includes(o.paper!) ? o.paper! : 'vintage',
     ribbonColor: o.ribbonColor || undefined,
     inkWear: range(o.inkWear, 0.35, 0, 1),
     speed: range(o.speed, 45, 0, 2000),

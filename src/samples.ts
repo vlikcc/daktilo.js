@@ -3,8 +3,13 @@ import { MechanicalSoundEngine } from './audio';
 export interface SoundSamples {
   /** Recording of key strikes; strikes are detected automatically and a random one plays per key. */
   key?: string;
-  /** Bell recording, played as-is. */
+  /**
+   * Bell recording, played as-is. Without a `return` recording it is treated as a combined
+   * "bell + carriage return" recording and plays at the start of each line.
+   */
   bell?: string;
+  /** Carriage return recording, played as-is at the start of each line. */
+  return?: string;
   /** Volume (0.0 - 1.0). Default: 0.4 */
   volume?: number;
 }
@@ -53,16 +58,21 @@ function fetchAudio(url: string | undefined): Promise<ArrayBuffer | null> {
 export class SampleSoundEngine extends MechanicalSoundEngine {
   #keyData: Promise<ArrayBuffer | null>;
   #bellData: Promise<ArrayBuffer | null>;
+  #returnData: Promise<ArrayBuffer | null>;
+  #separateReturn: boolean;
   #decoding = false;
   #keys: AudioBuffer | null = null;
   #hits: Hit[] = [];
   #bell: AudioBuffer | null = null;
+  #return: AudioBuffer | null = null;
 
-  constructor({ key, bell, volume = 0.4 }: SoundSamples) {
+  constructor({ key, bell, return: carriageReturn, volume = 0.4 }: SoundSamples) {
     super(true, volume);
     const browser = typeof window !== 'undefined';
     this.#keyData = fetchAudio(browser ? key : undefined);
     this.#bellData = fetchAudio(browser ? bell : undefined);
+    this.#returnData = fetchAudio(browser ? carriageReturn : undefined);
+    this.#separateReturn = !!carriageReturn;
   }
 
   override playKeyClick(isSpace = false): void {
@@ -76,7 +86,15 @@ export class SampleSoundEngine extends MechanicalSoundEngine {
   override playCarriageDing(): void {
     const ctx = this.#readyAndDecode();
     if (!ctx || !this.#bell) return super.playCarriageDing();
-    this.#play(ctx, this.#bell, 1);
+    // Birleşik "çan + satır başı" kaydı satır başında çalar; kenarda ikinci bir çan duyulmasın.
+    if (this.#separateReturn) this.#play(ctx, this.#bell, 1);
+  }
+
+  override playCarriageReturn(): void {
+    const ctx = this.#readyAndDecode();
+    const recording = this.#separateReturn ? this.#return : this.#bell;
+    if (!ctx || !recording) return super.playCarriageReturn();
+    this.#play(ctx, recording, 1);
   }
 
   #readyAndDecode(): AudioContext | null {
@@ -91,6 +109,7 @@ export class SampleSoundEngine extends MechanicalSoundEngine {
         this.#keys = buffer;
       });
       void decode(this.#bellData).then((buffer) => (this.#bell = buffer));
+      void decode(this.#returnData).then((buffer) => (this.#return = buffer));
     }
     return ctx;
   }

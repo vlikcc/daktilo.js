@@ -3,6 +3,7 @@ export { MechanicalSoundEngine } from './audio';
 export type {
   DaktiloOptions,
   DaktiloTarget,
+  PaperColors,
   PaperPreset,
   ResolvedOptions,
   SoundEngine,

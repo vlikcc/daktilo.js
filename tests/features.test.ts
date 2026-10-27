@@ -338,3 +338,85 @@ describe('küçük kusur düzeltmeleri', () => {
     }
   });
 });
+
+describe('kağıt teması seçenekleri', () => {
+  it("paper: 'auto' sistem temasını izleyen sınıfı ekler", () => {
+    const el = mount('<p>a</p>');
+    new Daktilo(el, { paper: 'auto', inkWear: 0 });
+    expect(el.classList).toContain('daktilo-theme-auto');
+  });
+
+  it('özel renkler CSS değişkenlerini ezer ve destroy() ile geri alınır', () => {
+    const el = mount('<p>a</p>');
+    el.setAttribute('style', 'color: red;');
+    const d = new Daktilo(el, { paper: { paper: '#fffbe6', ink: 'navy' }, inkWear: 0 });
+    expect(el.classList).toContain('daktilo-theme-vintage');
+    expect(el.style.getPropertyValue('--daktilo-paper')).toBe('#fffbe6');
+    expect(el.style.getPropertyValue('--daktilo-ink')).toBe('navy');
+    d.destroy();
+    expect(el.getAttribute('style')).toBe('color: red;');
+  });
+
+  it('geçersiz tema adında vintage’a döner', () => {
+    expect(resolveOptions({ paper: 'papyrus' as never }).paper).toBe('vintage');
+  });
+});
+
+describe('kenar çanı ve satır başı', () => {
+  /** Kutunun sağ kenarı 200 px; her harf 10 px genişliğinde ve imleç her vuruşta sağa kayar. */
+  function layout(typed: () => number, lineAt = Infinity) {
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (this: Element) {
+      if (!this.classList.contains('daktilo-cursor')) return { top: 0, right: 200, height: 0, width: 200 } as DOMRect;
+      const n = typed();
+      const line = n >= lineAt ? 1 : 0;
+      const col = line ? n - lineAt : n;
+      return { top: line * 28, right: 10 * (col + 1), height: 20, width: 10 } as DOMRect;
+    });
+  }
+
+  it('sağ kenara 6 karakter kala çanı satır başına bir kez çalar', async () => {
+    let typed = 0;
+    layout(() => typed);
+    const sound = fakeSound();
+    const d = new Daktilo(mount('<p>abcdefghijklmnopqr</p>'), {
+      animate: true,
+      typoRate: 0,
+      inkWear: 0,
+      sound: sound as SoundEngine,
+      onChar: () => typed++,
+    });
+    await typeOut(d);
+    // 200 px'lik satırda imleç 14. harften sonra (right = 150) kenara 60 px'ten yakın olur.
+    expect(sound.playCarriageDing).toHaveBeenCalledOnce();
+  });
+
+  it('yeni satırda satır başı sesini çalar ve çanı yeniden kurar', async () => {
+    let typed = 0;
+    layout(() => typed, 17);
+    const sound = { ...fakeSound(), playCarriageReturn: vi.fn() };
+    const d = new Daktilo(mount('<p>abcdefghijklmnopqrstuvwxyzabcdefgh</p>'), {
+      animate: true,
+      typoRate: 0,
+      inkWear: 0,
+      sound: sound as SoundEngine,
+      onChar: () => typed++,
+    });
+    await typeOut(d);
+    expect(sound.playCarriageReturn).toHaveBeenCalledOnce();
+    // İlk satırda bir, sarmadan sonra ikinci satırda bir çan.
+    expect(sound.playCarriageDing).toHaveBeenCalledTimes(2);
+  });
+
+  it('paragraf geçişlerinde çan değil satır başı sesi çalar', async () => {
+    const sound = { ...fakeSound(), playCarriageReturn: vi.fn() };
+    const d = new Daktilo(mount('<p>a</p><p>b</p><p>c</p>'), {
+      animate: true,
+      typoRate: 0,
+      inkWear: 0,
+      sound: sound as SoundEngine,
+    });
+    await typeOut(d);
+    expect(sound.playCarriageReturn).toHaveBeenCalledTimes(2);
+    expect(sound.playCarriageDing).not.toHaveBeenCalled();
+  });
+});

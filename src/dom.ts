@@ -12,6 +12,22 @@ export function graphemes(text: string): Iterable<string> {
   return Array.from(segmenter.segment(text), (s) => s.segment);
 }
 
+// DOM sabitleri sayı olarak: küçültücü `Node.TEXT_NODE` gibi adları kısaltamaz.
+export const ELEMENT_NODE = 1;
+export const TEXT_NODE = 3;
+
+/** `document.createElement` kısayolu; isteğe bağlı sınıf adı ve metinle. */
+export function create<K extends keyof HTMLElementTagNameMap>(
+  tag: K,
+  className?: string,
+  text?: string,
+): HTMLElementTagNameMap[K] {
+  const el = document.createElement(tag);
+  if (className) el.className = className;
+  if (text != null) el.textContent = text;
+  return el;
+}
+
 export const canUseDOM = (): boolean => typeof window !== 'undefined' && typeof document !== 'undefined';
 
 export const prefersReducedMotion = (): boolean =>
@@ -24,15 +40,13 @@ export const isSkipped = (el: Element): boolean =>
 /** Atlanan alt ağaçlar hariç, boş olmayan tüm metin düğümleri. */
 export function collectTextNodes(root: Node): Text[] {
   const nodes: Text[] = [];
-  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT, {
-    acceptNode: (node) =>
-      node.nodeType === Node.ELEMENT_NODE && isSkipped(node as Element)
-        ? NodeFilter.FILTER_REJECT
-        : NodeFilter.FILTER_ACCEPT,
+  // 5 = SHOW_ELEMENT | SHOW_TEXT; 2 = FILTER_REJECT, 1 = FILTER_ACCEPT
+  const walker = document.createTreeWalker(root, 5, {
+    acceptNode: (node) => (node.nodeType === ELEMENT_NODE && isSkipped(node as Element) ? 2 : 1),
   });
   while (walker.nextNode()) {
     const node = walker.currentNode;
-    if (node.nodeType === Node.TEXT_NODE && node.nodeValue?.trim()) nodes.push(node as Text);
+    if (node.nodeType === TEXT_NODE && node.nodeValue?.trim()) nodes.push(node as Text);
   }
   return nodes;
 }
@@ -46,7 +60,7 @@ export function snapshot(root: Node): () => void {
   const children = new Map<ParentNode, Node[]>();
   const texts = new Map<Text, string>();
   const visit = (node: Node): void => {
-    if (node.nodeType === Node.TEXT_NODE) {
+    if (node.nodeType === TEXT_NODE) {
       texts.set(node as Text, node.nodeValue ?? '');
     } else if (node.hasChildNodes()) {
       const kids = Array.from(node.childNodes);

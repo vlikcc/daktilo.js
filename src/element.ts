@@ -1,5 +1,6 @@
 import { Daktilo, type DaktiloOptions, type StampMetadata } from 'daktilo-js';
 import { AZERTY, QWERTY, QWERTY_ES, QWERTZ, TURKISH_F, TURKISH_Q } from './keyboards';
+import { applyTextures, type Texture } from './textures';
 
 /** Keyboard presets accepted by the `keyboard` attribute (case-insensitive). */
 export const KEYBOARD_PRESETS: Record<string, readonly string[]> = {
@@ -24,6 +25,7 @@ export const OBSERVED_ATTRIBUTES = [
   'keyboard',
   'fonts',
   'stamp',
+  'texture',
   ...STAMP.map((name) => `stamp-${name}`),
 ];
 
@@ -71,7 +73,7 @@ const Base = (typeof HTMLElement === 'undefined' ? class {} : HTMLElement) as ty
 
 /**
  * `<daktilo-sheet>`: renders its children on typewriter paper, configured with attributes
- * (`paper`, `animate`, `ink-wear`, `typo-rate`, `keyboard`, `stamp-doc-no` …). Emits `daktilo-char`,
+ * (`paper`, `animate`, `ink-wear`, `typo-rate`, `keyboard`, `stamp-doc-no`, `texture` …). Emits `daktilo-char`,
  * `daktilo-line` and `daktilo-complete` events. Changing an attribute restarts the paper; removing the
  * element from the page restores its content.
  */
@@ -143,6 +145,9 @@ export class DaktiloSheetElement extends Base {
       onLine: () => emit('daktilo-line'),
       onComplete: () => emit('daktilo-complete'),
     });
+    // destroy() sınıfları geri yüklediği için dokular her başlatmada yeniden eklenir.
+    const textures = this.getAttribute('texture')?.split(/\s+/).filter(Boolean);
+    if (textures?.length) applyTextures(this, textures as Texture[]);
   }
 }
 

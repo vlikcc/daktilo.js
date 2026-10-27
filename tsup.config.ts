@@ -42,6 +42,10 @@ export default defineConfig([
       options.alias = { 'daktilo-js': './src/index.ts' };
     },
   },
+  { ...shared, entry: { textures: 'src/textures.ts' }, globalName: 'DaktiloTextures' },
+  // Vue ve Svelte sarmalayıcıları da çekirdeği paket adıyla içe aktarır.
+  { ...shared, format: ['cjs', 'esm'], entry: { vue: 'src/vue.ts' }, external: ['vue', 'daktilo-js'] },
+  { ...shared, format: ['cjs', 'esm'], entry: { svelte: 'src/svelte.ts' }, external: ['daktilo-js'] },
   // React sarmalayıcısı çekirdeği paket adıyla içe aktarır; uygulamada tek bir Daktilo kopyası bulunur.
   { ...shared, format: ['cjs', 'esm'], entry: { react: 'src/react.ts' }, external: ['react', 'daktilo-js'] },
   {
